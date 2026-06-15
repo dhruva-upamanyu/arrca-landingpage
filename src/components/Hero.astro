@@ -1,0 +1,22 @@
+---
+import Logo from "./Logo.astro";
+const GITHUB = "https://github.com/dhruva-upamanyu/otel-k8s-graph";
+---
+<section class="relative overflow-hidden border-b border-ink-100">
+  <div class="mx-auto max-w-6xl px-5 py-24 text-center">
+    <div class="mx-auto mb-8 flex justify-center"><Logo variant="mark" class="scale-[2.2]" /></div>
+    <h1 class="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-ink-900 sm:text-6xl">
+      X marks the root cause.
+    </h1>
+    <p class="mx-auto mt-6 max-w-2xl text-lg text-ink-500">
+      arrca builds a <strong class="text-ink-800">live relationship graph</strong> of your
+      Kubernetes cluster — from read-only APIs and the OpenTelemetry traces you already emit.
+      Explore it yourself, or let Claude navigate it for you.
+    </p>
+    <div class="mt-9 flex flex-wrap justify-center gap-3">
+      <a href="/#quickstart" class="rounded-lg bg-teal-600 px-6 py-3 text-sm font-semibold text-white hover:bg-teal-500">Get started</a>
+      <a href={GITHUB} class="rounded-lg border border-ink-200 px-6 py-3 text-sm font-semibold text-ink-800 hover:border-ink-800">View on GitHub</a>
+    </div>
+    <p class="mt-6 font-mono text-xs text-ink-500">read-only Kubernetes APIs · OTel trace spans · REST · MCP</p>
+  </div>
+</section>
