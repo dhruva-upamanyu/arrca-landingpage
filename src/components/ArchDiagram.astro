@@ -1,0 +1,42 @@
+---
+// Mirrors README architecture:
+// K8s API -> graph-k8s --\
+//                          >-- Redis <-- graph-read -> REST API + MCP
+// OTel Collector -> graph-otel --/
+---
+<svg viewBox="0 0 760 300" class="w-full" role="img" aria-label="arrca architecture">
+  <style>
+    .box { fill: #fff; stroke: #1c2738; stroke-width: 1.5; rx: 10; }
+    .lbl { font: 600 13px var(--font-sans, sans-serif); fill: #1c2738; }
+    .sub { font: 11px var(--font-mono, monospace); fill: #4a5a72; }
+    .edge { stroke: #14b8a6; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 Z" fill="#14b8a6" />
+    </marker>
+  </defs>
+  <rect class="box" x="10" y="40" width="150" height="48" rx="10" />
+  <text class="lbl" x="24" y="62">Kubernetes API</text>
+  <text class="sub" x="24" y="78">pods, nodes, …</text>
+  <rect class="box" x="10" y="210" width="150" height="48" rx="10" />
+  <text class="lbl" x="24" y="232">OTel Collector</text>
+  <text class="sub" x="24" y="248">trace spans</text>
+  <rect class="box" x="230" y="40" width="150" height="48" rx="10" />
+  <text class="lbl" x="244" y="62">graph-k8s</text>
+  <text class="sub" x="244" y="78">structure</text>
+  <rect class="box" x="230" y="210" width="150" height="48" rx="10" />
+  <text class="lbl" x="244" y="232">graph-otel</text>
+  <text class="sub" x="244" y="248">relationships</text>
+  <rect class="box" x="450" y="125" width="120" height="48" rx="10" />
+  <text class="lbl" x="486" y="147">Redis</text>
+  <text class="sub" x="476" y="163">the graph</text>
+  <rect class="box" x="620" y="125" width="130" height="48" rx="10" />
+  <text class="lbl" x="634" y="147">graph-read</text>
+  <text class="sub" x="634" y="163">REST + MCP</text>
+  <path class="edge" d="M160 64 L228 64" />
+  <path class="edge" d="M160 234 L228 234" />
+  <path class="edge" d="M380 64 Q420 64 448 140" />
+  <path class="edge" d="M380 234 Q420 234 448 158" />
+  <path class="edge" d="M570 149 L618 149" />
+</svg>

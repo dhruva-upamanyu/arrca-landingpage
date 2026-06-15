@@ -1,0 +1,11 @@
+---
+interface Props { title: string; problem: string; query: string; }
+const { title, problem, query } = Astro.props;
+---
+<div class="flex flex-col rounded-2xl border border-ink-100 bg-white p-6 shadow-sm transition hover:shadow-md">
+  <h3 class="text-lg font-semibold text-ink-900">{title}</h3>
+  <p class="mt-2 flex-1 text-sm text-ink-500">{problem}</p>
+  <div class="mt-4 rounded-lg bg-ink-900 px-3 py-2">
+    <code class="font-mono text-xs text-teal-400">{query}</code>
+  </div>
+</div>

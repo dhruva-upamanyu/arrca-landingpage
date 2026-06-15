@@ -1,0 +1,21 @@
+---
+interface Props { lang?: string; title?: string; }
+const { lang = "bash", title } = Astro.props;
+---
+<div class="overflow-hidden rounded-xl border border-ink-800 bg-ink-900 text-ink-50 shadow-sm">
+  <div class="flex items-center justify-between border-b border-white/10 px-4 py-2">
+    <span class="font-mono text-xs text-ink-100/70">{title ?? lang}</span>
+    <button class="copyBtn text-xs text-ink-100/60 hover:text-white" aria-label="Copy">Copy</button>
+  </div>
+  <pre class="overflow-x-auto px-4 py-4 text-sm leading-relaxed"><code class="font-mono"><slot /></code></pre>
+</div>
+<script>
+  document.querySelectorAll(".copyBtn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const code = btn.closest("div")?.parentElement?.querySelector("code")?.textContent ?? "";
+      navigator.clipboard.writeText(code.trim());
+      btn.textContent = "Copied";
+      setTimeout(() => (btn.textContent = "Copy"), 1500);
+    });
+  });
+</script>
