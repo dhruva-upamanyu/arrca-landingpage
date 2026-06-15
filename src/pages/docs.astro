@@ -1,0 +1,308 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+
+const toc = [
+  ["quickstart", "Quickstart"],
+  ["knobs", "Helm knobs"],
+  ["collector", "OTel Collector"],
+  ["mcp", "MCP / Claude Code"],
+  ["rest", "REST API"],
+  ["schema", "Graph schema"],
+];
+
+// Code snippets are hoisted to constants and rendered with <Fragment set:text> so
+// the literal braces/colons in YAML and JSON are not parsed as Astro expressions.
+const installSh = `# Build + push all three images (versioned + latest), then helm upgrade --install:
+REGISTRY=<your-registry> ./deploy.sh
+
+# Or with helm directly against pre-built images:
+helm upgrade --install graph helm/graph \\
+  --namespace default --create-namespace \\
+  --set image.registry=<your-registry>`;
+
+const redisExternal = `helm ... --set redis.internal.enabled=false \\
+  --set redis.host=my-redis --set redis.password=s3cret`;
+
+const redisSecret = `kubectl create secret generic redis-creds \\
+  --from-literal=REDIS_HOST=my-redis \\
+  --from-literal=REDIS_PASSWORD=s3cret
+
+helm ... --set redis.internal.enabled=false \\
+  --set redis.existingSecret=redis-creds`;
+
+const otelValues = `# otel-collector-values.yaml
+mode: deployment
+
+image:
+  repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib
+
+# Adds the k8sattributes processor (+ RBAC) so spans carry
+# k8s.namespace.name / k8s.pod.name / k8s.container.name.
+presets:
+  kubernetesAttributes:
+    enabled: true
+
+config:
+  exporters:
+    otlp/graph:
+      endpoint: graph-otel-otlp.default.svc.cluster.local:4317
+      tls:
+        insecure: true
+
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlp/graph]`;
+
+const otelInstall = `helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+helm upgrade --install otel-collector open-telemetry/opentelemetry-collector \\
+  -f otel-collector-values.yaml`;
+
+const portForward = `kubectl port-forward svc/graph-read 8080:8080`;
+
+const mcpJson = `{
+  "mcpServers": {
+    "graph": {
+      "command": "graph-read",
+      "args": ["mcp"],
+      "env": { "GRAPH_BASE_URL": "http://localhost:8080" }
+    }
+  }
+}`;
+
+const redisSchema = `<prefix>:entity:<id>            HASH  id, kind, name, last_seen_at_ms
+<prefix>:entity:<id>:metadata   HASH  arbitrary string key/values
+<prefix>:entity:<id>:edges      SET   JSON-encoded Edge objects
+<prefix>:by_kind:<kind>         SET   entity IDs of the given kind
+<prefix>:ids                    SET   all entity IDs`;
+
+// Helm knobs (subset most relevant to install/operate). Source: helm/graph/README.md.
+const knobs = [
+  ["image.registry", "(required)", "Container registry for all three images, no trailing slash. The image ref is <registry>/<imageName>:<tag>."],
+  ["image.tag", "latest", "Shared image tag for all components. deploy.sh pins the exact version at install time."],
+  ["graph.keyPrefix", "graph", "GRAPH_REDIS_KEY_PREFIX namespacing every Redis key. All three components MUST agree on this to share one graph."],
+  ["redis.internal.enabled", "true", "Deploy a bundled single-replica Redis. Set false to bring your own."],
+  ["redis.host", "\"\"", "REDIS_HOST for external Redis (when internal.enabled is false and existingSecret is empty)."],
+  ["redis.password", "\"\"", "REDIS_PASSWORD for external Redis. Empty = no auth."],
+  ["redis.existingSecret", "\"\"", "Source host/username/password from an existing Secret (via secretKeyRef)."],
+  ["redis.internal.persistence.enabled", "false", "Persist the bundled Redis in a PVC. Off by default — the graph is rebuilt from the K8s API and OTel data after a restart."],
+  ["redis.internal.persistence.size", "1Gi", "PVC size when persistence is enabled."],
+  ["graphOtel.service.otlpPort", "4317", "OTLP gRPC port. Point the collector's traces exporter at graph-otel-otlp:<otlpPort>."],
+  ["graphOtel.config.flushInterval", "60s", "GRAPH_FLUSH_INTERVAL: how often the relationship delta is flushed to Redis."],
+  ["graphOtel.config.expiryTtl", "100s", "GRAPH_EXPIRY_TTL: drop entities/edges not seen for this long. MUST exceed flushInterval."],
+  ["graphK8s.config.resyncPeriod", "5m", "WATCH_RESYNC_PERIOD: how often informers re-list every object (self-heal)."],
+  ["graphRead.replicas", "1", "Replica count for the query API (stateless reader; safe to raise)."],
+  ["graphRead.ingress.enabled", "false", "Expose the query API via Ingress. NO auth and includes destructive POST /prune — add auth or restrict IPs first."],
+];
+
+// REST endpoints. Source: cmd/graph-read/README.md.
+const rest = [
+  ["GET", "/search?q=<text>&kind=<kind>&limit=N", "Case-insensitive substring across IDs, names, metadata values, and edge actions."],
+  ["GET", "/entities?kind=<kind>", "List every entity of a kind."],
+  ["GET", "/entity/{id...}", "One entity with its edges + metadata (IDs may contain /)."],
+  ["GET", "/subgraph/{id...}?max_depth=N", "BFS reachable set from an entity (blast radius / call neighborhood)."],
+  ["GET", "/flows?limit=N", "Trace-flow summaries (abstract request structures), by occurrence count."],
+  ["GET", "/flow/{hash}", "One flow's canonical structure (collapsed Merkle tree with per-node metadata)."],
+  ["POST", "/prune?older_than=<dur>", "Drop entities not seen for <dur> (e.g. 5m); returns the count."],
+  ["GET", "/healthz", "Liveness/readiness."],
+];
+
+const mcpTools = [
+  ["search", "Find entities by keyword across IDs, names, metadata values, and edge actions."],
+  ["get_entity", "Full detail for one entity by exact ID: kind, metadata, and all outbound edges."],
+  ["list_entities", "Enumerate every entity of a given kind."],
+  ["get_subgraph", "Every entity reachable from a root via BFS (blast radius / call neighborhood)."],
+  ["list_flows", "Distinct trace flows — request shapes collapsed from many traces."],
+  ["get_flow", "The full canonical structure of one trace flow by root hash."],
+];
+
+const entityKinds = "namespace, node, zone, region, deployment, statefulset, daemonset, job, cronjob, rollout, pod, container, hpa, scaledobject (from the Kubernetes API); endpoint, topic, database (from trace spans).";
+const edgeKinds = "CONTAINS/RUNS_IN, MANAGES/MANAGED_BY, SCALES/SCALED_BY (K8s derived); EXPOSES/EXPOSED_BY, CALLS/CALLED_BY, PUBLISHES/PUBLISHED_BY, CONSUMES/CONSUMED_BY, QUERIES/QUERIED_BY (span derived). QUERIES edges carry an action (the SQL/command).";
+const idForms = [
+  ["pod:<ns>/<name>", "a pod"],
+  ["container:<ns>/<pod>/<name>", "a container"],
+  ["endpoint:<service>/<METHOD>/<route>", "an HTTP endpoint"],
+  ["database:<system>/<host>[:<port>]", "a database"],
+  ["topic:<name>", "a messaging topic"],
+];
+---
+<BaseLayout title="arrca docs" description="Install, configure, and query otel-k8s-graph.">
+  <div class="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-[200px_1fr]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-24 space-y-2">
+        <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">On this page</p>
+        {toc.map(([id, label]) => (
+          <a href={`#${id}`} class="block text-sm text-ink-500 hover:text-ink-900">{label}</a>
+        ))}
+      </nav>
+    </aside>
+
+    <article class="max-w-none">
+      <h1 class="text-4xl font-bold tracking-tight text-ink-900">Docs</h1>
+      <p class="mt-3 text-lg text-ink-500">
+        Install <strong class="text-ink-800">otel-k8s-graph</strong>, feed it trace spans, and query
+        the graph over REST or from Claude. Three small Go binaries, coordinating only through Redis.
+      </p>
+
+      <!-- Quickstart -->
+      <section id="quickstart" class="mt-14 scroll-mt-24">
+        <h2 class="text-2xl font-bold text-ink-900">Quickstart</h2>
+        <p class="mt-3 text-ink-500">
+          The Helm chart bundles a single-replica Redis by default, so a fresh install is
+          self-contained. <code class="font-mono text-ink-800">image.registry</code> is the only
+          required value.
+        </p>
+        <div class="mt-4"><CodeBlock title="install"><Fragment set:text={installSh} /></CodeBlock></div>
+        <p class="mt-4 text-ink-500">
+          Already have Redis? Point at it with
+          <code class="font-mono text-ink-800">--set redis.internal.enabled=false</code>:
+        </p>
+        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+          <CodeBlock title="external redis (inline)"><Fragment set:text={redisExternal} /></CodeBlock>
+          <CodeBlock title="external redis (existing secret)"><Fragment set:text={redisSecret} /></CodeBlock>
+        </div>
+      </section>
+
+      <!-- Helm knobs -->
+      <section id="knobs" class="mt-14 scroll-mt-24">
+        <h2 class="text-2xl font-bold text-ink-900">Helm knobs</h2>
+        <p class="mt-3 text-ink-500">
+          The values you'll reach for most often. See the chart README for the complete list.
+        </p>
+        <div class="mt-4 overflow-x-auto rounded-xl border border-ink-100">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-ink-50 text-ink-800">
+              <tr>
+                <th class="px-4 py-2 font-semibold">Key</th>
+                <th class="px-4 py-2 font-semibold">Default</th>
+                <th class="px-4 py-2 font-semibold">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {knobs.map(([key, def, desc]) => (
+                <tr class="border-t border-ink-100 align-top">
+                  <td class="px-4 py-2 font-mono text-xs text-teal-600 whitespace-nowrap">{key}</td>
+                  <td class="px-4 py-2 font-mono text-xs text-ink-800 whitespace-nowrap">{def}</td>
+                  <td class="px-4 py-2 text-ink-500">{desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- OTel Collector -->
+      <section id="collector" class="mt-14 scroll-mt-24">
+        <h2 class="text-2xl font-bold text-ink-900">OTel Collector setup</h2>
+        <p class="mt-3 text-ink-500">
+          graph-otel consumes <strong class="text-ink-800">trace spans directly</strong> — no
+          spanmetrics connector or metrics pipeline required. Fan the spans your apps already emit to
+          graph-otel alongside your existing trace backend. The
+          <code class="font-mono text-ink-800">k8sattributes</code> preset adds the
+          <code class="font-mono text-ink-800">k8s.*</code> attributes graph-otel needs to attach
+          relationships to the right container.
+        </p>
+        <div class="mt-4"><CodeBlock title="otel-collector-values.yaml"><Fragment set:text={otelValues} /></CodeBlock></div>
+        <div class="mt-4"><CodeBlock title="install collector"><Fragment set:text={otelInstall} /></CodeBlock></div>
+        <p class="mt-4 text-ink-500">
+          Already exporting traces? Just add the <code class="font-mono text-ink-800">otlp/graph</code>
+          exporter to your existing traces pipeline.
+        </p>
+      </section>
+
+      <!-- MCP / Claude Code -->
+      <section id="mcp" class="mt-14 scroll-mt-24">
+        <h2 class="text-2xl font-bold text-ink-900">MCP / Claude Code</h2>
+        <p class="mt-3 text-ink-500">
+          The same <code class="font-mono text-ink-800">graph-read</code> binary runs an MCP server in
+          <code class="font-mono text-ink-800">mcp</code> mode. It's a thin REST client of the query
+          API — set <code class="font-mono text-ink-800">GRAPH_BASE_URL</code> to point it at the API.
+          For a cluster-hosted API, port-forward it first:
+        </p>
+        <div class="mt-4"><CodeBlock title="port-forward"><Fragment set:text={portForward} /></CodeBlock></div>
+        <p class="mt-4 text-ink-500">Then register it with Claude Code / Claude Desktop:</p>
+        <div class="mt-4"><CodeBlock title="mcp config (json)"><Fragment set:text={mcpJson} /></CodeBlock></div>
+        <p class="mt-6 font-semibold text-ink-800">The six tools</p>
+        <ul class="mt-3 space-y-2">
+          {mcpTools.map(([name, desc]) => (
+            <li class="flex flex-col gap-1 sm:flex-row sm:gap-3">
+              <code class="font-mono text-sm font-semibold text-teal-600 sm:w-36 sm:shrink-0">{name}</code>
+              <span class="text-sm text-ink-500">{desc}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- REST API -->
+      <section id="rest" class="mt-14 scroll-mt-24">
+        <h2 class="text-2xl font-bold text-ink-900">REST API</h2>
+        <p class="mt-3 text-ink-500">
+          Served by <code class="font-mono text-ink-800">graph-read</code> on
+          <code class="font-mono text-ink-800">:8080</code>. The MCP tools mirror these endpoints.
+        </p>
+        <div class="mt-4 overflow-x-auto rounded-xl border border-ink-100">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-ink-50 text-ink-800">
+              <tr>
+                <th class="px-4 py-2 font-semibold">Method</th>
+                <th class="px-4 py-2 font-semibold">Path</th>
+                <th class="px-4 py-2 font-semibold">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rest.map(([method, path, desc]) => (
+                <tr class="border-t border-ink-100 align-top">
+                  <td class="px-4 py-2 font-mono text-xs font-semibold text-gold-500">{method}</td>
+                  <td class="px-4 py-2 font-mono text-xs text-ink-800">{path}</td>
+                  <td class="px-4 py-2 text-ink-500">{desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-4 rounded-lg border border-gold-400 bg-gold-400/10 px-4 py-3 text-sm text-ink-800">
+          The query API has no authentication and includes the destructive
+          <code class="font-mono">POST /prune</code>. Put auth in front (ingress basic-auth /
+          oauth2-proxy) or restrict source IPs before exposing it.
+        </p>
+      </section>
+
+      <!-- Graph schema -->
+      <section id="schema" class="mt-14 scroll-mt-24">
+        <h2 class="text-2xl font-bold text-ink-900">Graph schema</h2>
+        <div class="mt-4 space-y-4">
+          <div>
+            <p class="font-semibold text-ink-800">Entity kinds</p>
+            <p class="mt-1 text-sm text-ink-500">{entityKinds}</p>
+          </div>
+          <div>
+            <p class="font-semibold text-ink-800">Edge kinds</p>
+            <p class="mt-1 text-sm text-ink-500">{edgeKinds}</p>
+          </div>
+          <div>
+            <p class="font-semibold text-ink-800">Entity IDs</p>
+            <ul class="mt-1 space-y-1">
+              {idForms.map(([form, what]) => (
+                <li class="text-sm text-ink-500">
+                  <code class="font-mono text-xs text-teal-600">{form}</code> — {what}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p class="font-semibold text-ink-800">Redis schema (prefix configurable, default <code class="font-mono">graph</code>)</p>
+            <div class="mt-2"><CodeBlock title="redis keys"><Fragment set:text={redisSchema} /></CodeBlock></div>
+          </div>
+        </div>
+      </section>
+
+      <p class="mt-16 text-sm text-ink-500">
+        Full source and chart values on
+        <a href="https://github.com/dhruva-upamanyu/otel-k8s-graph" class="text-teal-600 underline">GitHub</a>.
+      </p>
+    </article>
+  </div>
+</BaseLayout>
