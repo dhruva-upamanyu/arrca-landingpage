@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    arrca favicon — magnifying glass + graph motif on dark tile
+    Optimised for 16–32px: large gold ring, bold teal nodes,
+    no fine detail that disappears at tiny sizes.
+  -->
+
+  <!-- dark rounded tile background -->
+  <rect width="32" height="32" rx="7" fill="#0f1825" />
+
+  <!-- subtle inner glow ring on tile (adds depth without gradients) -->
+  <rect
+    x="1" y="1" width="30" height="30"
+    rx="6.2"
+    fill="none"
+    stroke="#1c2738"
+    stroke-width="1"
+  />
+
+  <!-- lens fill — slightly lighter than background so it reads -->
+  <circle cx="14.5" cy="14.5" r="8" fill="#0d2535" />
+
+  <!-- magnifying glass ring — bold gold, the primary identifier -->
+  <circle
+    cx="14.5"
+    cy="14.5"
+    r="8"
+    fill="none"
+    stroke="#e3a008"
+    stroke-width="2.6"
+  />
+
+  <!-- handle -->
+  <line
+    x1="20.5" y1="20.5"
+    x2="26.5" y2="26.5"
+    stroke="#e3a008"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+
+  <!-- graph: equilateral-ish triangle of 3 nodes + 3 edges inside lens -->
+  <!-- edges -->
+  <line x1="11" y1="12" x2="18" y2="12" stroke="#14b8a6" stroke-width="1.4" stroke-linecap="round" />
+  <line x1="11" y1="12" x2="14.5" y2="18" stroke="#14b8a6" stroke-width="1.4" stroke-linecap="round" />
+  <line x1="18" y1="12" x2="14.5" y2="18" stroke="#14b8a6" stroke-width="1.4" stroke-linecap="round" />
+  <!-- nodes (slightly larger so they pop at 16px) -->
+  <circle cx="11" cy="12" r="2.2" fill="#2dd4bf" />
+  <circle cx="18" cy="12" r="2.2" fill="#2dd4bf" />
+  <circle cx="14.5" cy="18" r="2.2" fill="#0d9488" />
+</svg>

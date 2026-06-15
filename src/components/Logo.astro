@@ -1,0 +1,179 @@
+---
+interface Props {
+  variant?: "full" | "mark";
+  class?: string;
+}
+const { variant = "full", class: klass = "" } = Astro.props;
+---
+<span class={`inline-flex items-center gap-2 ${klass}`}>
+  <!--
+    arrca mascot: friendly pirate peering through a magnifying glass
+    whose lens frames a teal graph (nodes + edges).
+    48×48 viewBox — optimised for both nav (~36 px) and hero sizes.
+
+    Design principles:
+    • Flat, geometric shapes — no gradients, no textures
+    • Face occupies upper-left quadrant; magnifying glass lower-right,
+      overlapping to create natural depth
+    • Gold (#e3a008 / #f5c451) = magnifying-glass ring + bandana dots
+    • Teal (#0d9488 / #14b8a6 / #2dd4bf) = open eye + graph nodes/edges
+    • Ink (#1c2738 / #0f1825) = eye-patch + outlines
+    • Skin (#f0cfa3) = face
+  -->
+  <svg
+    viewBox="0 0 48 48"
+    role="img"
+    aria-label="arrca"
+    class="h-9 w-9 shrink-0"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      <!-- clip the graph so it stays inside the lens -->
+      <clipPath id="lens-clip">
+        <circle cx="31" cy="30" r="7.5" />
+      </clipPath>
+    </defs>
+
+    <!-- ═══════════════════════════════════════════
+         FACE (circle, centred at 19,20, r=11)
+    ═══════════════════════════════════════════ -->
+    <circle cx="19" cy="20" r="11" fill="#f0cfa3" />
+
+    <!-- ═══════════════════════════════════════════
+         BANDANA — single bold shape + fold shadow
+         Runs ear-to-ear across the upper head
+    ═══════════════════════════════════════════ -->
+    <!-- main bandana body -->
+    <path
+      d="M8 17.5 Q19 9.5 30 17.5 L30 14.5 Q19 6.5 8 14.5 Z"
+      fill="#cc3333"
+    />
+    <!-- fold shadow (darker strip at bottom of bandana) -->
+    <path
+      d="M8 15.8 Q19 7.8 30 15.8 L30 17.5 Q19 9.5 8 17.5 Z"
+      fill="#a82828"
+    />
+    <!-- small knot at right temple -->
+    <circle cx="30" cy="16" r="1.6" fill="#cc3333" />
+    <circle cx="30" cy="16" r="0.8" fill="#a82828" />
+    <!-- bandana dot accents (warm gold, subtle) -->
+    <circle cx="13" cy="13" r="0.7" fill="#f5c451" opacity="0.75" />
+    <circle cx="19" cy="11.2" r="0.7" fill="#f5c451" opacity="0.75" />
+    <circle cx="25" cy="13" r="0.7" fill="#f5c451" opacity="0.75" />
+
+    <!-- ═══════════════════════════════════════════
+         EYE-PATCH (left eye / viewer's right)
+         Strap: diagonal line from brow to cheek
+         Patch: rounded-square over eye socket
+    ═══════════════════════════════════════════ -->
+    <!-- strap -->
+    <line
+      x1="10.5"
+      y1="18"
+      x2="17.5"
+      y2="16.5"
+      stroke="#1c2738"
+      stroke-width="1.5"
+      stroke-linecap="round"
+    />
+    <!-- patch body -->
+    <rect
+      x="10"
+      y="18.5"
+      width="7"
+      height="5"
+      rx="1.4"
+      fill="#1c2738"
+    />
+
+    <!-- ═══════════════════════════════════════════
+         OPEN EYE (right / viewer's left) — teal iris
+    ═══════════════════════════════════════════ -->
+    <!-- white -->
+    <circle cx="25" cy="21" r="2.4" fill="#fff" />
+    <!-- iris (teal) -->
+    <circle cx="25" cy="21" r="1.5" fill="#0d9488" />
+    <!-- pupil -->
+    <circle cx="25.3" cy="20.7" r="0.65" fill="#0f1825" />
+    <!-- catchlight -->
+    <circle cx="24.6" cy="20.3" r="0.35" fill="#fff" />
+
+    <!-- ═══════════════════════════════════════════
+         NOSE — minimal, just a soft bump
+    ═══════════════════════════════════════════ -->
+    <path
+      d="M21 24 q1 1.5 2.5 0.5"
+      stroke="#c9a07a"
+      stroke-width="1.1"
+      fill="none"
+      stroke-linecap="round"
+    />
+
+    <!-- ═══════════════════════════════════════════
+         SMILE — gentle upward curve
+    ═══════════════════════════════════════════ -->
+    <path
+      d="M17 27 q3.5 3.5 8 0.5"
+      stroke="#9b6a44"
+      stroke-width="1.3"
+      fill="none"
+      stroke-linecap="round"
+    />
+
+    <!-- ═══════════════════════════════════════════
+         MAGNIFYING GLASS
+         Ring: gold, centred at (31,30), r=8.5
+         Handle: thicker gold rod, lower-right
+    ═══════════════════════════════════════════ -->
+    <!-- handle shadow (subtle depth) -->
+    <line
+      x1="38.2"
+      y1="37.2"
+      x2="44.2"
+      y2="43.2"
+      stroke="#a07200"
+      stroke-width="3.8"
+      stroke-linecap="round"
+    />
+    <!-- handle -->
+    <line
+      x1="37.5"
+      y1="36.5"
+      x2="43.5"
+      y2="42.5"
+      stroke="#e3a008"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+    <!-- lens fill (very light tint so graph pops) -->
+    <circle cx="31" cy="30" r="8.5" fill="#eef7f6" />
+    <!-- gold ring (drawn on top of fill, under graph) -->
+    <circle
+      cx="31"
+      cy="30"
+      r="8.5"
+      fill="none"
+      stroke="#e3a008"
+      stroke-width="2.4"
+    />
+
+    <!-- ═══════════════════════════════════════════
+         GRAPH inside lens — 3-node triangle
+         Clipped to circle. Nodes: teal; Edges: teal.
+    ═══════════════════════════════════════════ -->
+    <g clip-path="url(#lens-clip)">
+      <!-- edges (drawn first, under nodes) -->
+      <line x1="28" y1="27" x2="34" y2="27" stroke="#14b8a6" stroke-width="1.3" stroke-linecap="round" />
+      <line x1="28" y1="27" x2="31" y2="33" stroke="#14b8a6" stroke-width="1.3" stroke-linecap="round" />
+      <line x1="34" y1="27" x2="31" y2="33" stroke="#14b8a6" stroke-width="1.3" stroke-linecap="round" />
+      <!-- nodes -->
+      <circle cx="28" cy="27" r="2.1" fill="#0d9488" />
+      <circle cx="34" cy="27" r="2.1" fill="#0d9488" />
+      <circle cx="31" cy="33" r="2.1" fill="#2dd4bf" />
+    </g>
+  </svg>
+
+  {variant === "full" && (
+    <span class="text-2xl font-bold tracking-tight text-ink-900">arrca</span>
+  )}
+</span>
