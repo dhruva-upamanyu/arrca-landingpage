@@ -1,7 +1,171 @@
 ---
-import "../styles/global.css";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Hero from "../components/Hero.astro";
+import Section from "../components/Section.astro";
+import PatternCard from "../components/PatternCard.astro";
+import ArchDiagram from "../components/ArchDiagram.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+
+const GITHUB = "https://github.com/dhruva-upamanyu/otel-k8s-graph";
+
+// Reliability patterns — each maps to real graph/MCP traversals (no invented detectors).
+const patterns = [
+  {
+    title: "Single points of failure",
+    problem: "One service that nearly everything calls. If it falls, the fleet falls. Find the nodes with the heaviest CALLED_BY fan-in.",
+    query: "get_entity → count CALLED_BY edges",
+  },
+  {
+    title: "Large fan-outs",
+    problem: "A request that triggers a cascade of downstream calls — latency and failure amplifiers. Spot nodes with many outbound CALLS edges.",
+    query: "get_entity → count CALLS edges",
+  },
+  {
+    title: "Cyclical dependencies",
+    problem: "A calls B calls C calls A. Cycles make deploys and failures hard to reason about. Detect loops across CALLS edges and flow trees.",
+    query: "get_subgraph + list_flows",
+  },
+  {
+    title: "Downstream depth & blast radius",
+    problem: "Before you touch a service, see everything reachable from it. BFS the graph to bound the blast radius of a change.",
+    query: "get_subgraph(id, max_depth)",
+  },
+  {
+    title: "Dead code",
+    problem: "Endpoints that are EXPOSED but have no callers — safe to deprecate. Walk every endpoint and find the ones with zero CALLED_BY.",
+    query: "list_entities(endpoint) → no callers",
+  },
+];
+
+const mcpTools = [
+  ["search", "Find entities by keyword across IDs, names, metadata, and edge actions."],
+  ["get_entity", "Full detail for one entity: kind, metadata, and all outbound edges."],
+  ["list_entities", "Enumerate every entity of a given kind."],
+  ["get_subgraph", "Everything reachable from a root via BFS — blast radius / call neighborhood."],
+  ["list_flows", "Distinct request shapes collapsed from many traces."],
+  ["get_flow", "The full canonical structure of one trace flow."],
+];
+
+const codeAskClaude = `> Which services would be impacted if I take down auth-service?
+
+Claude uses get_subgraph(deployment:prod/auth-service) and reports the
+downstream blast radius: 7 deployments, 2 databases, 1 kafka topic.`;
+
+const codeInstall = `REGISTRY=<your-registry> ./deploy.sh`;
+
+const codeOtelCollector = `exporters:
+  otlp/graph:
+    endpoint: graph-otel-otlp.default.svc.cluster.local:4317
+    tls: { insecure: true }
+service:
+  pipelines:
+    traces:
+      exporters: [otlp/graph]`;
 ---
-<html lang="en">
-  <head><meta charset="utf-8" /><title>arrca</title></head>
-  <body><h1 class="text-3xl font-bold text-teal-600">arrca — scaffold OK</h1></body>
-</html>
+<BaseLayout>
+  <Hero />
+
+  <Section id="what" eyebrow="What it is" title="Your cluster, as one queryable graph">
+    <div class="mt-6 grid gap-8 lg:grid-cols-2">
+      <p class="text-lg text-ink-500">
+        Cluster topology is scattered across <code class="font-mono text-ink-800">kubectl</code> and a
+        tracing UI, and RBAC keeps most engineers from poking around at all. arrca unifies two
+        read-only sources into a single graph: <strong class="text-ink-800">cluster structure</strong>
+        from the Kubernetes API (namespaces, nodes, zones, workloads, pods, containers, autoscalers)
+        and <strong class="text-ink-800">service relationships</strong> from your OpenTelemetry trace
+        spans (who calls which endpoint, queries which database, publishes to which topic).
+      </p>
+      <p class="text-lg text-ink-500">
+        The result answers questions a dashboard can't: <em>"what pods still call <code class="font-mono text-ink-800">/v1/checkout</code> — can I deprecate it?"</em>,
+        <em>"how many services are impacted if I change this deployment?"</em>,
+        <em>"which services talk to the mysql database at 10.0.0.0?"</em> — over REST, or straight from Claude.
+      </p>
+    </div>
+  </Section>
+
+  <Section id="reliability" eyebrow="For Platform & SRE teams" title="Find the structural risks hiding in your microservices" class="bg-ink-50 rounded-3xl">
+    <p class="mt-4 max-w-2xl text-lg text-ink-500">
+      The graph makes microservice anti-patterns answerable as queries. Ask them yourself over REST,
+      or let Claude walk the graph for you.
+    </p>
+    <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {patterns.map((p) => <PatternCard title={p.title} problem={p.problem} query={p.query} />)}
+    </div>
+  </Section>
+
+  <Section id="onboarding" eyebrow="For developers" title="Explore the real topology — no RBAC battle">
+    <div class="mt-6 grid gap-8 lg:grid-cols-2">
+      <p class="text-lg text-ink-500">
+        New engineers shouldn't need cluster-admin to understand how the system fits together. Every
+        node and edge in arrca is aggregated from <strong class="text-ink-800">read-only Kubernetes APIs</strong>
+        and <strong class="text-ink-800">telemetry</strong> — no secrets, no write access, nothing sensitive.
+        It's a safe map of production you can hand to anyone on day one.
+      </p>
+      <p class="text-lg text-ink-500">
+        Walk from a deployment to the endpoints it serves, the databases it queries, the zones it runs
+        in, and the services that depend on it — without ever touching a live resource.
+      </p>
+    </div>
+  </Section>
+
+  <Section id="mcp" eyebrow="Natively integrated" title="Built for Claude Code, out of the box">
+    <p class="mt-4 max-w-2xl text-lg text-ink-500">
+      <code class="font-mono text-ink-800">graph-read mcp</code> is a Model Context Protocol server.
+      Point Claude Code (or Claude Desktop) at it and the model can reason over your live topology to
+      make better decisions — reviewing a PR, planning a migration, or running an incident.
+    </p>
+    <div class="mt-8 grid gap-8 lg:grid-cols-2">
+      <ul class="space-y-3">
+        {mcpTools.map(([name, desc]) => (
+          <li class="flex gap-3">
+            <code class="font-mono text-sm font-semibold text-teal-600">{name}</code>
+            <span class="text-sm text-ink-500">{desc}</span>
+          </li>
+        ))}
+      </ul>
+      <CodeBlock title="ask Claude"><Fragment set:text={codeAskClaude} /></CodeBlock>
+    </div>
+  </Section>
+
+  <Section id="architecture" eyebrow="How it works" title="Three small binaries, coordinating through Redis">
+    <div class="mt-8 rounded-2xl border border-ink-100 bg-white p-6"><ArchDiagram /></div>
+    <div class="mt-8 grid gap-6 lg:grid-cols-3">
+      <div><h3 class="font-semibold text-ink-900">graph-k8s</h3><p class="mt-1 text-sm text-ink-500">Watches the Kubernetes API and writes structural entities + containment/management edges. Single writer.</p></div>
+      <div><h3 class="font-semibold text-ink-900">graph-otel</h3><p class="mt-1 text-sm text-ink-500">Consumes OTel trace spans and writes relationship entities + CALLS/QUERIES/PUBLISHES/EXPOSES edges.</p></div>
+      <div><h3 class="font-semibold text-ink-900">graph-read</h3><p class="mt-1 text-sm text-ink-500">Serves the read/query REST API and the MCP server.</p></div>
+    </div>
+    <div class="mt-8 rounded-2xl border border-gold-400 bg-gold-400/10 p-6">
+      <h3 class="font-semibold text-ink-900">Assumptions</h3>
+      <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-ink-500">
+        <li>Reads only — arrca never writes to your cluster. graph-k8s uses read-only Kubernetes APIs.</li>
+        <li>Trace spans must carry <code class="font-mono">k8s.*</code> attributes (the collector's <code class="font-mono">k8sattributes</code> processor adds them) so relationships attach to the right container.</li>
+        <li>graph-otel consumes <strong>trace spans directly</strong> — no spanmetrics connector or metrics pipeline required.</li>
+        <li>Argo Rollouts and KEDA are CRDs; if they're absent, graph-k8s detects it and skips them, so it runs anywhere.</li>
+      </ul>
+    </div>
+  </Section>
+
+  <Section id="quickstart" eyebrow="Quickstart" title="Two steps to a live graph">
+    <div class="mt-8 grid gap-6 lg:grid-cols-2">
+      <div>
+        <p class="mb-3 text-sm font-semibold text-ink-800">1. Install the chart (bundles Redis):</p>
+        <CodeBlock title="install"><Fragment set:text={codeInstall} /></CodeBlock>
+      </div>
+      <div>
+        <p class="mb-3 text-sm font-semibold text-ink-800">2. Fan trace spans to graph-otel:</p>
+        <CodeBlock title="otel-collector-values.yaml"><Fragment set:text={codeOtelCollector} /></CodeBlock>
+      </div>
+    </div>
+    <a href="/docs" class="mt-8 inline-block font-semibold text-teal-600 hover:text-teal-500">Full docs, every knob →</a>
+  </Section>
+
+  <Section id="demo" eyebrow="Demo" title="See it on a real system">
+    <div class="mt-6 flex flex-col items-start gap-3 rounded-2xl border border-dashed border-ink-200 bg-white p-8">
+      <span class="rounded-full bg-gold-400/20 px-3 py-1 text-xs font-semibold text-gold-500">Coming soon</span>
+      <p class="text-lg text-ink-500">
+        A live walkthrough on the <a href="https://github.com/open-telemetry/opentelemetry-demo" class="text-teal-600 underline">OpenTelemetry Astronomy Shop</a> —
+        the graph, the patterns, and Claude navigating it end to end.
+      </p>
+    </div>
+  </Section>
+</BaseLayout>
