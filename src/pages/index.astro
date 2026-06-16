@@ -26,7 +26,7 @@ const patterns = [
   },
   {
     name: "Blast radius",
-    problem: `Before you touch a service, see everything reachable from it. BFS the graph to bound the impact of a change.`,
+    problem: `Before you take a service down or ship a breaking change, see what depends on it — the upstream callers that break if it fails.`,
     query: "get_subgraph(id, max_depth)",
   },
   {
@@ -40,7 +40,7 @@ const mcpTools = [
   ["search", "Find entities by keyword across IDs, names, metadata values, and edge actions."],
   ["get_entity", "Full detail for one entity: kind, metadata, and all outbound edges."],
   ["list_entities", "Enumerate every entity of a given kind."],
-  ["get_subgraph", "Everything reachable from a root via BFS — the blast radius."],
+  ["get_subgraph", "Everything reachable from a root via BFS — dependencies downstream, dependents upstream."],
   ["list_flows", "Distinct request shapes collapsed from many traces."],
   ["get_flow", "The full canonical structure of one trace flow."],
 ];
@@ -139,9 +139,9 @@ service:
       <div class="overflow-hidden rounded-2xl border border-night-line bg-night">
         <div class="border-b border-white/10 px-[18px] py-3.5 font-mono text-[12px] text-[#9fb0bd]">ask claude</div>
         <div class="px-5 py-[22px] font-mono text-[13px] leading-[1.75]">
-          <div class="text-teal-400">&gt; Which services break if I take<br />&nbsp;&nbsp;down auth-service?</div>
-          <div class="mt-3.5 text-[#aab9c5]">Claude calls <span class="text-paper">get_subgraph(prod/auth-service)</span> and reports the downstream blast radius:</div>
-          <div class="mt-3 text-paper">&nbsp;&nbsp;<span class="text-teal-400">7</span> deployments<br />&nbsp;&nbsp;<span class="text-teal-400">2</span> databases<br />&nbsp;&nbsp;<span class="text-gold-400">1</span> kafka topic</div>
+          <div class="text-teal-400">&gt; What does auth-service depend<br />&nbsp;&nbsp;on downstream?</div>
+          <div class="mt-3.5 text-[#aab9c5]">Claude calls <span class="text-paper">get_subgraph(prod/auth-service)</span> and maps its downstream footprint:</div>
+          <div class="mt-3 text-paper">&nbsp;&nbsp;<span class="text-teal-400">7</span> services<br />&nbsp;&nbsp;<span class="text-teal-400">2</span> databases<br />&nbsp;&nbsp;<span class="text-gold-400">1</span> kafka topic</div>
         </div>
       </div>
     </div>
