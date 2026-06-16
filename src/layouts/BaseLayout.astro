@@ -4,8 +4,8 @@ import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
 interface Props { title?: string; description?: string; }
 const {
-  title = "arrca — X marks the root cause",
-  description = "A live relationship graph of your Kubernetes cluster, built from read-only APIs and the traces you already emit.",
+  title = "arrca — service graph on steroids",
+  description = "A live relationship graph of your Kubernetes cluster, built from read-only APIs and the OpenTelemetry traces you already emit. Explore it yourself, or let Claude navigate it.",
 } = Astro.props;
 ---
 <!doctype html>
@@ -13,8 +13,9 @@ const {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/arrca-mark.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>{title}</title>
     <meta name="description" content={description} />
