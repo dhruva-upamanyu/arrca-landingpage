@@ -61,14 +61,19 @@ const otelInstall = `helm repo add open-telemetry https://open-telemetry.github.
 helm upgrade --install otel-collector open-telemetry/opentelemetry-collector \\
   -f otel-collector-values.yaml`;
 
-const portForward = `kubectl port-forward svc/graph-read 8080:8080`;
+const ingressInstall = `helm ... \\
+  --set graphRead.ingress.enabled=true \\
+  --set graphRead.ingress.className=nginx \\
+  --set graphRead.ingress.hosts[0].host=graph.example.com \\
+  --set graphRead.ingress.hosts[0].paths[0].path=/ \\
+  --set graphRead.ingress.hosts[0].paths[0].pathType=Prefix`;
 
 const mcpJson = `{
   "mcpServers": {
     "graph": {
       "command": "graph-read",
       "args": ["mcp"],
-      "env": { "GRAPH_BASE_URL": "http://localhost:8080" }
+      "env": { "GRAPH_BASE_URL": "https://graph.example.com" }
     }
   }
 }`;
@@ -220,10 +225,15 @@ const idForms = [
           The same <code class="font-mono text-ink-800">graph-read</code> binary runs an MCP server in
           <code class="font-mono text-ink-800">mcp</code> mode. It's a thin REST client of the query
           API — set <code class="font-mono text-ink-800">GRAPH_BASE_URL</code> to point it at the API.
-          For a cluster-hosted API, port-forward it first:
+          Expose the query API with the chart's built-in Ingress so the MCP server can run anywhere:
         </p>
-        <div class="mt-4"><CodeBlock title="port-forward"><Fragment set:text={portForward} /></CodeBlock></div>
-        <p class="mt-4 text-ink-500">Then register it with Claude Code / Claude Desktop:</p>
+        <div class="mt-4"><CodeBlock title="expose via ingress"><Fragment set:text={ingressInstall} /></CodeBlock></div>
+        <p class="mt-4 rounded-lg border border-gold-400 bg-gold-400/10 px-4 py-3 text-sm text-ink-800">
+          The query API has no authentication and includes the destructive
+          <code class="font-mono">POST /prune</code> — add auth at the ingress (basic-auth /
+          oauth2-proxy annotations) or restrict source IPs before exposing it.
+        </p>
+        <p class="mt-4 text-ink-500">Then register it with Claude Code / Claude Desktop, pointing <code class="font-mono text-ink-800">GRAPH_BASE_URL</code> at the ingress host:</p>
         <div class="mt-4"><CodeBlock title="mcp config (json)"><Fragment set:text={mcpJson} /></CodeBlock></div>
         <p class="mt-6 font-semibold text-ink-800">The six tools</p>
         <ul class="mt-3 space-y-2">

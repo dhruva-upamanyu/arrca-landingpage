@@ -66,11 +66,13 @@ service:
   <Section id="what" eyebrow="What it is" title="Your cluster, as one queryable graph">
     <div class="mt-6 grid gap-8 lg:grid-cols-2">
       <p class="text-lg text-ink-500">
-        Cluster topology is scattered across <code class="font-mono text-ink-800">kubectl</code> and a
-        tracing UI, and RBAC keeps most engineers from poking around at all. arrca unifies two
-        read-only sources into a single graph: <strong class="text-ink-800">cluster structure</strong>
-        from the Kubernetes API (namespaces, nodes, zones, workloads, pods, containers, autoscalers)
-        and <strong class="text-ink-800">service relationships</strong> from your OpenTelemetry trace
+        A microservices topology is fragmented: some structural relationships live in Kubernetes,
+        others exist only in telemetry. arrca unifies both read-only sources into a single graph
+        engineers can actually explore — no <code class="font-mono text-ink-800">kubectl</code>
+        incantations, no RBAC barriers, no guessing which dashboard holds what.
+        <strong class="text-ink-800">Cluster structure</strong> comes from the Kubernetes API
+        (namespaces, nodes, zones, workloads, pods, containers, autoscalers);
+        <strong class="text-ink-800">service relationships</strong> come from your OpenTelemetry trace
         spans (who calls which endpoint, queries which database, publishes to which topic).
       </p>
       <p class="text-lg text-ink-500">
