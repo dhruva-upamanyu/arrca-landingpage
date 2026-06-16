@@ -139,9 +139,9 @@ service:
       <div class="overflow-hidden rounded-2xl border border-night-line bg-night">
         <div class="border-b border-white/10 px-[18px] py-3.5 font-mono text-[12px] text-[#9fb0bd]">ask claude</div>
         <div class="px-5 py-[22px] font-mono text-[13px] leading-[1.75]">
-          <div class="text-teal-400">&gt; What does auth-service depend<br />&nbsp;&nbsp;on downstream?</div>
-          <div class="mt-3.5 text-[#aab9c5]">Claude calls <span class="text-paper">get_subgraph(prod/auth-service)</span> and maps its downstream footprint:</div>
-          <div class="mt-3 text-paper">&nbsp;&nbsp;<span class="text-teal-400">7</span> services<br />&nbsp;&nbsp;<span class="text-teal-400">2</span> databases<br />&nbsp;&nbsp;<span class="text-gold-400">1</span> kafka topic</div>
+          <div class="text-teal-400">&gt; What breaks if I take down<br />&nbsp;&nbsp;auth-service?</div>
+          <div class="mt-3.5 text-[#aab9c5]">Claude calls <span class="text-paper">get_subgraph(prod/auth-service)</span> and walks its callers (CALLED_BY):</div>
+          <div class="mt-3 text-paper">&nbsp;&nbsp;<span class="text-teal-400">7</span> services break<br />&nbsp;&nbsp;<span class="text-paper">3</span> direct<br />&nbsp;&nbsp;<span class="text-paper">4</span> transitive</div>
         </div>
       </div>
     </div>
