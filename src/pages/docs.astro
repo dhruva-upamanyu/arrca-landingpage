@@ -134,14 +134,40 @@ const mcpTools = [
   ["get_flow", "The full canonical structure of one trace flow by root hash."],
 ];
 
-const entityKinds = "namespace, node, zone, region, deployment, statefulset, daemonset, job, cronjob, rollout (Argo Rollouts), pod, container, hpa, scaledobject (KEDA) — all from the Kubernetes API; endpoint, topic, database — from trace spans.";
-const edgeKinds = "CONTAINS/RUNS_IN, MANAGES/MANAGED_BY, SCALES/SCALED_BY (K8s derived); EXPOSES/EXPOSED_BY, CALLS/CALLED_BY, PUBLISHES/PUBLISHED_BY, CONSUMES/CONSUMED_BY, QUERIES/QUERIED_BY (span derived). QUERIES edges carry an action (the SQL/command).";
-const idForms = [
-  ["pod:<ns>/<name>", "a pod"],
-  ["container:<ns>/<pod>/<name>", "a container"],
-  ["endpoint:<service>/<METHOD>/<route>", "an HTTP endpoint"],
-  ["database:<system>/<host>[:<port>]", "a database"],
-  ["topic:<name>", "a messaging topic"],
+// Entity types. Columns: kind, id format, source, how it's derived (+ labels/metadata).
+// Sourced from internal/k8swatch (mapper.go, dynamic.go) and internal/builder.
+const entityTypes = [
+  ["namespace", "namespace:<name>", "K8s Namespace", "Namespace objects (also implied by every pod). Metadata: label.*"],
+  ["node", "node:<name>", "K8s Node", "Node objects + each pod's spec.nodeName. Metadata: node label.*"],
+  ["zone", "zone:<name>", "K8s Node labels", "From topology.kubernetes.io/zone (legacy failure-domain.beta.kubernetes.io/zone). Emitted only if the label is set; region → zone → node."],
+  ["region", "region:<name>", "K8s Node labels", "From topology.kubernetes.io/region (legacy fallback). Emitted only when both zone and region labels are present."],
+  ["deployment", "deployment:<ns>/<name>", "K8s Deployment", "Deployment objects. Metadata: label.*"],
+  ["statefulset", "statefulset:<ns>/<name>", "K8s StatefulSet", "StatefulSet objects. Metadata: label.*"],
+  ["daemonset", "daemonset:<ns>/<name>", "K8s DaemonSet", "DaemonSet objects. Metadata: label.*"],
+  ["job", "job:<ns>/<name>", "K8s Job", "Job objects; linked to its CronJob via ownerRef. Metadata: label.*"],
+  ["cronjob", "cronjob:<ns>/<name>", "K8s CronJob", "CronJob objects. Metadata: label.*, cronjob.schedule"],
+  ["rollout", "rollout:<ns>/<name>", "Argo Rollouts CRD (argoproj.io/v1alpha1)", "Watched via dynamic informer; skipped if the CRD is absent. Metadata: label.*, rollout.strategy (canary/blueGreen)"],
+  ["pod", "pod:<ns>/<name>", "K8s Pod", "Pod objects. Metadata: label.*, k8s.node.name, k8s.pod.uid"],
+  ["container", "container:<ns>/<pod>/<name>", "K8s Pod spec", "From each pod's spec.containers. Metadata: container.image.name"],
+  ["hpa", "hpa:<ns>/<name>", "K8s HPA (autoscaling/v2)", "HorizontalPodAutoscaler objects. Metadata: hpa.min_replicas, hpa.max_replicas, hpa.target.kind/name"],
+  ["scaledobject", "scaledobject:<ns>/<name>", "KEDA CRD (keda.sh/v1alpha1)", "Dynamic informer; skipped if the CRD is absent. Metadata: keda.target.*, keda.min/max_replicas, keda.triggers, keda.scaling_policy"],
+  ["endpoint", "endpoint:<service>/<METHOD>/<route>", "OTel HTTP spans", "span.kind SERVER or CLIENT with http.request.method. SERVER → route from http.route, service from service.name. CLIENT → route from url.full path, service from peer.service (else server.address). :id/{id}/all-digit segments collapse to {n}."],
+  ["topic", "topic:<name>", "OTel messaging spans", "span.kind PRODUCER or CONSUMER. Name from messaging.destination.name (fallback: first token of span.name). Used verbatim."],
+  ["database", "database:<system>/<host>[:<port>]", "OTel DB-client spans", "db.system set + span.kind CLIENT + server.address. Port from server.port (optional)."],
+];
+
+// Edge types. Columns: edge / counterpart, source, meaning, how it's derived.
+// Span-derived edges anchor on the emitting container (container preferred over pod).
+const edgeTypes = [
+  ["CONTAINS / RUNS_IN", "K8s", "Structural containment (A contains B).", "namespace → pod, node → pod, pod → container (pod spec); zone → node, region → zone (node topology labels)."],
+  ["MANAGES / MANAGED_BY", "K8s", "A workload owns/controls its children.", "deployment/statefulset/daemonset/job/rollout → pod (pod ownerRef); cronjob → job (Job ownerRef); scaledobject → hpa (HPA ownerRef = ScaledObject)."],
+  ["SCALES / SCALED_BY", "K8s", "An autoscaler scales a workload.", "hpa → target (HPA spec.scaleTargetRef); scaledobject → target (KEDA spec.scaleTargetRef, defaults Deployment). Targets: Deployment/StatefulSet/Rollout; other kinds recorded in metadata only."],
+  ["EXPOSES / EXPOSED_BY", "Spans", "A container serves an HTTP endpoint.", "HTTP SERVER span: span.kind=SERVER + http.request.method + http.route + service.name."],
+  ["CALLS / CALLED_BY", "Spans", "A container calls an HTTP endpoint.", "HTTP CLIENT span: span.kind=CLIENT + http.request.method + url.full; target = peer.service (else server.address)."],
+  ["QUERIES / QUERIED_BY", "Spans", "A container queries a database.", "DB CLIENT span: db.system + span.kind=CLIENT + server.address. Carries action = templatized span.name (the SQL op); one edge per distinct operation."],
+  ["PUBLISHES / PUBLISHED_BY", "Spans", "A container publishes to a topic.", "Messaging PRODUCER span."],
+  ["CONSUMES / CONSUMED_BY", "Spans", "A container consumes from a topic.", "Messaging CONSUMER span."],
+  ["EMITS / EMITTED_BY", "Spans (rollup)", "Workload-level rollup of everything its containers touch — one hop to answer “what does this deployment talk to?”", "deployment/statefulset/… → every endpoint/topic/database (the union of its containers' CALLS/EXPOSES/QUERIES/PUBLISHES/CONSUMES), hoisted onto the stable workload id. graph-otel resolves container → pod → workload via the pod's MANAGED_BY edge at flush time."],
 ];
 ---
 <BaseLayout title="arrca docs" description="Install, configure, and query otel-k8s-graph.">
@@ -296,24 +322,58 @@ const idForms = [
       <!-- Graph schema -->
       <section id="schema" class="mt-14 scroll-mt-24">
         <h2 class="text-2xl font-bold text-ink-900">Graph schema</h2>
-        <div class="mt-4 space-y-4">
+        <div class="mt-4 space-y-8">
           <div>
-            <p class="font-semibold text-ink-800">Entity kinds</p>
-            <p class="mt-1 text-sm text-ink-500">{entityKinds}</p>
+            <p class="font-semibold text-ink-800">Entity types</p>
+            <p class="mt-1 text-sm text-ink-500">Every node kind, where it comes from, and the signal that creates it.</p>
+            <div class="mt-3 overflow-x-auto rounded-xl border border-ink-100">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-ink-50 text-ink-800">
+                  <tr>
+                    <th class="px-4 py-2 font-semibold">Kind</th>
+                    <th class="px-4 py-2 font-semibold">ID format</th>
+                    <th class="px-4 py-2 font-semibold">Source</th>
+                    <th class="px-4 py-2 font-semibold">How it's derived</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entityTypes.map(([kind, id, source, how]) => (
+                    <tr class="border-t border-ink-100 align-top">
+                      <td class="px-4 py-2 font-mono text-xs font-medium text-teal-600 whitespace-nowrap">{kind}</td>
+                      <td class="px-4 py-2 font-mono text-xs text-ink-800 whitespace-nowrap">{id}</td>
+                      <td class="px-4 py-2 text-ink-600 whitespace-nowrap">{source}</td>
+                      <td class="px-4 py-2 text-ink-500 min-w-[22rem]">{how}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           <div>
-            <p class="font-semibold text-ink-800">Edge kinds</p>
-            <p class="mt-1 text-sm text-ink-500">{edgeKinds}</p>
-          </div>
-          <div>
-            <p class="font-semibold text-ink-800">Entity IDs</p>
-            <ul class="mt-1 space-y-1">
-              {idForms.map(([form, what]) => (
-                <li class="text-sm text-ink-500">
-                  <code class="font-mono text-xs text-teal-600">{form}</code> — {what}
-                </li>
-              ))}
-            </ul>
+            <p class="font-semibold text-ink-800">Edge types</p>
+            <p class="mt-1 text-sm text-ink-500">Each edge has a counterpart in the other direction. Span-derived edges anchor on the emitting container (container preferred over pod).</p>
+            <div class="mt-3 overflow-x-auto rounded-xl border border-ink-100">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-ink-50 text-ink-800">
+                  <tr>
+                    <th class="px-4 py-2 font-semibold">Edge / counterpart</th>
+                    <th class="px-4 py-2 font-semibold">Source</th>
+                    <th class="px-4 py-2 font-semibold">Meaning</th>
+                    <th class="px-4 py-2 font-semibold">How it's derived</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {edgeTypes.map(([edge, source, meaning, how]) => (
+                    <tr class="border-t border-ink-100 align-top">
+                      <td class="px-4 py-2 font-mono text-xs font-medium text-gold-500 whitespace-nowrap">{edge}</td>
+                      <td class="px-4 py-2 text-ink-600 whitespace-nowrap">{source}</td>
+                      <td class="px-4 py-2 text-ink-500 min-w-[14rem]">{meaning}</td>
+                      <td class="px-4 py-2 text-ink-500 min-w-[22rem]">{how}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           <div>
             <p class="font-semibold text-ink-800">Redis schema (prefix configurable, default <code class="font-mono">graph</code>)</p>
