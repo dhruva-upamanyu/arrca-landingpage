@@ -149,11 +149,11 @@ const entityTypes = [
   ["daemonset", "daemonset:<ns>/<name>", "K8s DaemonSet", "DaemonSet objects. Metadata: label.*"],
   ["job", "job:<ns>/<name>", "K8s Job", "Job objects; linked to its CronJob via ownerRef. Metadata: label.*"],
   ["cronjob", "cronjob:<ns>/<name>", "K8s CronJob", "CronJob objects. Metadata: label.*, cronjob.schedule"],
-  ["rollout", "rollout:<ns>/<name>", "Argo Rollouts CRD (argoproj.io/v1alpha1)", "Watched via dynamic informer; skipped if the CRD is absent. Metadata: label.*, rollout.strategy (canary/blueGreen)"],
+  ["rollout", "rollout:<ns>/<name>", "Argo Rollouts CRD (argoproj.io/v1alpha1)", "Watched via dynamic informer; skipped if the CRD is absent. Metadata: label.*, rollout.strategy (canary/blueGreen)", "Argo Rollouts"],
   ["pod", "pod:<ns>/<name>", "K8s Pod", "Pod objects. Metadata: label.*, k8s.node.name, k8s.pod.uid"],
   ["container", "container:<ns>/<pod>/<name>", "K8s Pod spec", "From each pod's spec.containers. Metadata: container.image.name"],
   ["hpa", "hpa:<ns>/<name>", "K8s HPA (autoscaling/v2)", "HorizontalPodAutoscaler objects. Metadata: hpa.min_replicas, hpa.max_replicas, hpa.target.kind/name"],
-  ["scaledobject", "scaledobject:<ns>/<name>", "KEDA CRD (keda.sh/v1alpha1)", "Dynamic informer; skipped if the CRD is absent. Metadata: keda.target.*, keda.min/max_replicas, keda.triggers, keda.scaling_policy"],
+  ["scaledobject", "scaledobject:<ns>/<name>", "KEDA CRD (keda.sh/v1alpha1)", "Dynamic informer; skipped if the CRD is absent. Metadata: keda.target.*, keda.min/max_replicas, keda.triggers, keda.scaling_policy", "KEDA"],
   ["endpoint", "endpoint:<service>/<METHOD>/<route>", "OTel HTTP spans", "span.kind SERVER or CLIENT with http.request.method. SERVER → route from http.route, service from service.name. CLIENT → route from url.full path, service from peer.service (else server.address). :id/{id}/all-digit segments collapse to {n}."],
   ["topic", "topic:<name>", "OTel messaging spans", "span.kind PRODUCER or CONSUMER. Name from messaging.destination.name (fallback: first token of span.name). Used verbatim."],
   ["database", "database:<system>/<host>[:<port>]", "OTel DB-client spans", "db.system set + span.kind CLIENT + server.address. Port from server.port (optional)."],
@@ -340,9 +340,12 @@ const edgeTypes = [
                   </tr>
                 </thead>
                 <tbody>
-                  {entityTypes.map(([kind, id, source, how]) => (
+                  {entityTypes.map(([kind, id, source, how, tech]) => (
                     <tr class="border-t border-ink-100 align-top">
-                      <td class="px-4 py-2 font-mono text-xs font-medium text-teal-600 whitespace-nowrap">{kind}</td>
+                      <td class="px-4 py-2 whitespace-nowrap">
+                        <span class="font-mono text-xs font-medium text-teal-600">{kind}</span>
+                        {tech && <span class="mt-0.5 block text-[11px] font-medium text-gold-500">{tech}</span>}
+                      </td>
                       <td class="px-4 py-2 font-mono text-xs text-ink-800 whitespace-nowrap">{id}</td>
                       <td class="px-4 py-2 text-ink-600 whitespace-nowrap">{source}</td>
                       <td class="px-4 py-2 text-ink-500 min-w-[22rem]">{how}</td>
