@@ -48,14 +48,22 @@ const mcpTools = [
 const codeInstall = `REGISTRY=<your-registry> ./deploy.sh`;
 
 const codeOtelCollector = `exporters:
-  otlp/graph:
-    endpoint: graph-otel-otlp.default.svc.cluster.local:4317
-    tls:
-      insecure: true
+  # shard spans by trace id so every span of a
+  # trace reaches the same graph-otel replica
+  loadbalancing:
+    routing_key: traceID
+    resolver:
+      dns:
+        hostname: graph-otel-otlp-headless.default.svc.cluster.local
+        port: 4317
+    protocol:
+      otlp:
+        tls:
+          insecure: true
 service:
   pipelines:
     traces:
-      exporters: [otlp/graph]`;
+      exporters: [loadbalancing]`;
 ---
 <BaseLayout>
   <Hero />

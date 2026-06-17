@@ -45,17 +45,27 @@ presets:
 
 config:
   exporters:
-    otlp/graph:
-      endpoint: graph-otel-otlp.default.svc.cluster.local:4317
-      tls:
-        insecure: true
+    # graph-otel reconstructs whole traces in memory (for flows), so every
+    # span of a trace must reach the SAME replica. The loadbalancing exporter
+    # shards by trace id across the graph-otel pods, discovered via the
+    # headless Service (returns one A record per pod).
+    loadbalancing:
+      routing_key: traceID
+      resolver:
+        dns:
+          hostname: graph-otel-otlp-headless.default.svc.cluster.local
+          port: 4317
+      protocol:
+        otlp:
+          tls:
+            insecure: true
 
   service:
     pipelines:
       traces:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [otlp/graph]`;
+        exporters: [loadbalancing]`;
 
 const otelInstall = `helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
 helm upgrade --install otel-collector open-telemetry/opentelemetry-collector \\
@@ -213,8 +223,11 @@ const idForms = [
         <div class="mt-4"><CodeBlock title="otel-collector-values.yaml"><Fragment set:text={otelValues} /></CodeBlock></div>
         <div class="mt-4"><CodeBlock title="install collector"><Fragment set:text={otelInstall} /></CodeBlock></div>
         <p class="mt-4 text-ink-500">
-          Already exporting traces? Just add the <code class="font-mono text-ink-800">otlp/graph</code>
-          exporter to your existing traces pipeline.
+          Already exporting traces? Add the <code class="font-mono text-ink-800">loadbalancing</code>
+          exporter alongside your existing one in the traces pipeline
+          (<code class="font-mono text-ink-800">exporters: [your-backend, loadbalancing]</code>).
+          The trace-id sharding keeps each trace whole across graph-otel replicas, which its
+          flow assembly requires.
         </p>
       </section>
 
