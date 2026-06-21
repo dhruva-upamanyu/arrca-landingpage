@@ -1,24 +1,20 @@
 ---
+import Logo from "./Logo.astro";
 const GITHUB = "https://github.com/arrca-ai/otel-k8s-graph";
 const EMAIL = "mailto:dhruvaupamanyu93@gmail.com";
 ---
-<footer class="border-t border-ink-150 bg-paper">
-  <div class="mx-auto grid max-w-[1180px] gap-8 px-8 py-14 sm:grid-cols-[1.4fr_1fr]">
-    <div>
-      <div class="mb-3.5 flex items-center gap-2.5">
-        <img src="/arrca-mark.svg" alt="" width="30" height="30" class="h-[30px] w-[30px] select-none" />
-        <span class="text-[19px] font-bold tracking-tight text-ink-900">arrca</span>
-      </div>
-      <p class="max-w-[38ch] text-sm leading-relaxed text-ink-600">
-        Pirate-grade root-cause analysis tooling.
-        <code class="font-mono text-[12.5px] text-ink-900">otel-k8s-graph</code> is the first mate —
-        more RCA tools are on the way.
-      </p>
-    </div>
-    <div class="flex flex-col items-start gap-2.5">
-      <a href={EMAIL} class="text-sm text-ink-500 transition-colors hover:text-ink-900">Contact</a>
-      <a href={GITHUB} class="text-sm text-ink-500 transition-colors hover:text-ink-900">GitHub</a>
-      <span class="mt-2 font-mono text-[11.5px] text-ink-400">Apache-2.0 · © arrca</span>
+<footer class="border-t border-ink-150 bg-ink-50">
+  <div class="mx-auto flex max-w-[1180px] flex-wrap items-center gap-3.5 px-6 py-9 sm:px-8">
+    <span class="text-ink-900"><Logo size={22} /></span>
+    <span class="text-[16px] font-bold">arrca</span>
+    <span class="hidden text-[13.5px] text-ink-400 sm:inline">Root-cause analysis for Kubernetes + OpenTelemetry · more RCA tools coming</span>
+    <span class="flex-1"></span>
+    <div class="flex flex-wrap gap-x-[22px] gap-y-1.5 text-[13.5px] text-ink-500">
+      <a href="/#views" class="text-ink-500 no-underline hover:text-ink-900">Product</a>
+      <a href="/#mcp" class="text-ink-500 no-underline hover:text-ink-900">MCP</a>
+      <a href="/docs" class="text-ink-500 no-underline hover:text-ink-900">Docs</a>
+      <a href={EMAIL} class="text-ink-500 no-underline hover:text-ink-900">Contact</a>
+      <a href={GITHUB} class="text-ink-500 no-underline hover:text-ink-900">GitHub ↗</a>
     </div>
   </div>
 </footer>

@@ -1,27 +1,11 @@
 ---
-interface Props {
-  variant?: "full" | "mark";
-  class?: string;
-  /** Tailwind sizing classes for the emblem (default: nav size). */
-  imgClass?: string;
-}
-const {
-  variant = "full",
-  class: klass = "",
-  imgClass = "h-7 w-7",
-} = Astro.props;
+// Logo.astro — the arrca magnifying-glass mark. Inherits color via `style="color:…"`
+// or a text-* utility on the parent (paths use currentColor). Pass a size in px.
+interface Props { size?: number; }
+const { size = 26 } = Astro.props;
 ---
-<span class={`inline-flex items-center gap-2.5 ${klass}`}>
-  <img
-    src="/arrca-mark.svg"
-    alt="arrca"
-    width="512"
-    height="512"
-    class={`${imgClass} shrink-0 select-none`}
-    loading="eager"
-    decoding="async"
-  />
-  {variant === "full" && (
-    <span class="text-[19px] font-bold tracking-tight text-ink-900">arrca</span>
-  )}
-</span>
+<svg width={size} height={size} viewBox="-7.5 -8 136 136" style="display:block" aria-hidden="true">
+  <circle cx="52" cy="65" r="27" fill="none" stroke="currentColor" stroke-width="9"></circle>
+  <path d="M71 84 L95 108" stroke="currentColor" stroke-width="12" stroke-linecap="round"></path>
+  <path d="M25 41 Q22 25 40 27 Q52 11 64 27 Q82 25 79 41 Q63 31 52 32 Q41 31 25 41 Z" fill="currentColor"></path>
+</svg>

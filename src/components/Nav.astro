@@ -1,38 +1,43 @@
 ---
 import Logo from "./Logo.astro";
+const GITHUB = "https://github.com/arrca-ai/otel-k8s-graph";
 const links = [
-  { href: "/#reliability", label: "Reliability" },
-  { href: "/#onboarding", label: "Onboarding" },
-  { href: "/#mcp", label: "Claude / MCP" },
-  { href: "/#architecture", label: "How it works" },
+  { href: "/#views", label: "Product" },
+  { href: "/#how", label: "How it works" },
+  { href: "/#mcp", label: "MCP" },
   { href: "/docs", label: "Docs" },
 ];
-const GITHUB = "https://github.com/arrca-ai/otel-k8s-graph";
-const EMAIL = "mailto:dhruvaupamanyu93@gmail.com";
 ---
-<header class="sticky top-0 z-50 border-b border-ink-150 bg-paper/80 backdrop-blur">
-  <nav class="mx-auto flex max-w-[1180px] items-center justify-between px-8 py-4">
-    <a href="/" aria-label="arrca home"><Logo /></a>
-    <div class="hidden items-center gap-7 md:flex">
+<header class="sticky top-0 z-50 border-b border-ink-150 bg-paper/85 backdrop-blur-md">
+  <div class="mx-auto flex h-[62px] max-w-[1180px] items-center gap-3.5 px-6 sm:px-8">
+    <a href="/" class="flex items-center gap-2.5 text-ink-900 no-underline" aria-label="arrca home">
+      <span class="text-ink-900"><Logo size={26} /></span>
+      <span class="text-[19px] font-bold tracking-tight">arrca</span>
+    </a>
+    <span class="flex-1"></span>
+
+    <!-- desktop -->
+    <nav class="hidden items-center gap-7 md:flex">
       {links.map((l) => (
-        <a href={l.href} class="text-sm text-ink-500 transition-colors hover:text-ink-900">{l.label}</a>
+        <a href={l.href} class="text-[14.5px] font-medium text-ink-500 no-underline hover:text-ink-900">{l.label}</a>
       ))}
-      <span class="h-4 w-px bg-ink-150"></span>
-      <a href={EMAIL} class="text-sm text-ink-500 transition-colors hover:text-ink-900">Contact</a>
-      <a href={GITHUB} aria-label="GitHub" class="text-ink-500 transition-colors hover:text-ink-900">
-        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 .1.8 1.3 2.6.9.1-.7.4-1.2.7-1.5-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+      <a href={GITHUB} class="flex items-center gap-1.5 text-[14.5px] font-medium text-ink-500 no-underline hover:text-ink-900">
+        GitHub<span class="text-[11px] text-ink-400">↗</span>
       </a>
-      <a href="/#quickstart" class="rounded-lg bg-ink-900 px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-ink-800">Quickstart</a>
-    </div>
-    <button id="navToggle" class="md:hidden" aria-label="Toggle menu">
+      <a href="/docs#quickstart" class="rounded-lg bg-teal-600 px-4 py-2.5 text-[14px] font-semibold text-white no-underline hover:bg-teal-400">Get started</a>
+    </nav>
+
+    <!-- mobile toggle -->
+    <button id="navToggle" class="md:hidden text-ink-900" aria-label="Toggle menu">
       <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
-  </nav>
-  <div id="mobileMenu" class="hidden flex-col gap-1 border-t border-ink-150 bg-paper px-8 py-3 md:!hidden">
-    {links.map((l) => (<a href={l.href} class="py-2 text-sm text-ink-500">{l.label}</a>))}
-    <a href={EMAIL} class="py-2 text-sm text-ink-500">Contact</a>
-    <a href={GITHUB} class="py-2 text-sm text-ink-500">GitHub</a>
-    <a href="/#quickstart" class="py-2 text-sm font-semibold text-teal-600">Quickstart</a>
+  </div>
+
+  <!-- mobile menu -->
+  <div id="mobileMenu" class="hidden flex-col gap-1 border-t border-ink-150 bg-paper px-6 py-3 md:!hidden">
+    {links.map((l) => (<a href={l.href} class="py-2 text-sm font-medium text-ink-500 no-underline">{l.label}</a>))}
+    <a href={GITHUB} class="py-2 text-sm font-medium text-ink-500 no-underline">GitHub ↗</a>
+    <a href="/docs#quickstart" class="py-2 text-sm font-semibold text-teal-600 no-underline">Get started</a>
   </div>
 </header>
 <script>

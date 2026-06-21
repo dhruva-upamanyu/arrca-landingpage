@@ -1,127 +1,30 @@
 ---
+import ProductWindow from "./ProductWindow.astro";
 const GITHUB = "https://github.com/arrca-ai/otel-k8s-graph";
 ---
-<section
-  id="top"
-  class="border-b border-ink-150"
-  style="background-image:radial-gradient(#e1e7ec 1px, transparent 1px); background-size:24px 24px;"
->
-  <div class="mx-auto max-w-[1180px] px-8 py-24 text-center">
-    <div class="mb-7 inline-flex items-center gap-2.5 font-mono text-[12px] tracking-wide text-ink-400">
-      <span class="h-[7px] w-[7px] rounded-full bg-teal-400"></span>
-      root-cause analysis · kubernetes
-    </div>
+<section class="mx-auto max-w-[1180px] px-6 pt-[78px] text-center sm:px-8">
+  <div class="inline-flex items-center gap-2.5 rounded-full border border-teal-600/25 bg-teal-600/[0.06] px-3.5 py-1.5 font-mono text-[12px] uppercase tracking-[0.08em] text-teal-600">
+    <span class="h-[7px] w-[7px] animate-pulse rounded-full bg-teal-600"></span>
+    Root-cause analysis · MCP-native
+  </div>
 
-    <h1 class="text-[clamp(40px,6vw,68px)] font-bold leading-[1.0] tracking-[-0.035em]">
-      Service <span class="text-teal-600">graph</span> on steroids.
-    </h1>
+  <h1 class="mx-auto mt-6 max-w-[840px] text-[clamp(40px,7vw,62px)] font-bold leading-[1.04] tracking-[-0.025em] text-ink-900">
+    Service <span class="text-teal-600">graph</span><br />on steroids.
+  </h1>
 
-    <!-- hero diagram: a live subgraph -->
-    <div class="mx-auto mt-12 max-w-[1000px] overflow-hidden rounded-2xl border border-night-line bg-night text-left shadow-[0_30px_60px_-34px_rgba(15,28,40,0.6)]">
-      <div class="flex items-center justify-between border-b border-white/10 px-5 py-3.5">
-        <span class="font-mono text-[12.5px] text-[#9fb0bd]">get_subgraph(prod/cart-service, max_depth=2)</span>
-        <span class="h-2 w-2 rounded-full bg-teal-400 shadow-[0_0_0_4px_rgba(20,184,166,0.16)]"></span>
-      </div>
-      <div class="px-6 pb-2 pt-5">
-        <svg viewBox="0 0 860 210" class="block w-full" style="font-family:var(--font-mono)">
-          <defs>
-            <marker id="arT" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="#14b8a6" fill-opacity="0.75"></path></marker>
-            <marker id="arC" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="#c9d5e0"></path></marker>
-            <marker id="arG" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="#f2bb45"></path></marker>
-          </defs>
+  <p class="mx-auto mt-[22px] max-w-[660px] text-[clamp(17px,2.4vw,19.5px)] leading-[1.55] text-ink-500">
+    arrca builds a live relationship graph of your Kubernetes cluster — from read-only APIs and the
+    OpenTelemetry traces you already emit. Explore it over REST, or let Claude navigate it over MCP.
+  </p>
 
-          <!-- frontend (mobile) -->
-          <circle cx="54" cy="96" r="21" fill="#14b8a6" fill-opacity="0.6" stroke="#14b8a6" stroke-width="1.6"></circle>
-          <rect x="48" y="89" width="12" height="16" rx="2" fill="none" stroke="#0c1720" stroke-width="1.4"></rect>
-          <line x1="48" y1="101" x2="60" y2="101" stroke="#0c1720" stroke-width="1.4"></line>
-          <text x="54" y="132" fill="#c9d5e0" font-size="9" text-anchor="middle">frontend</text>
-          <text x="54" y="142" fill="#7f93a1" font-size="7.5" text-anchor="middle">mobile · deployment</text>
+  <div class="mt-[30px] flex flex-wrap justify-center gap-3.5">
+    <a href="/docs#quickstart" class="rounded-[10px] bg-teal-600 px-6 py-3.5 text-[15.5px] font-semibold text-white no-underline shadow-[0_1px_2px_rgba(13,148,136,.3)] hover:bg-teal-400">Get started</a>
+    <a href={GITHUB} class="rounded-[10px] border border-ink-200 bg-white px-6 py-3.5 text-[15.5px] font-semibold text-ink-900 no-underline hover:border-ink-400">View on GitHub →</a>
+  </div>
 
-          <!-- CALLS: frontend → endpoint -->
-          <path d="M76,96 C108,96 128,100 168,100" stroke="#14b8a6" stroke-width="1.4" stroke-opacity="0.7" fill="none" marker-end="url(#arT)"></path>
-          <text x="108" y="86" fill="#14b8a6" fill-opacity="0.6" font-size="7.5" letter-spacing="0.05em">CALLS</text>
-
-          <!-- /v1/add_to_cart endpoint -->
-          <rect x="170" y="86" width="152" height="28" rx="14" fill="#14b8a6" fill-opacity="0.1" stroke="#14b8a6" stroke-opacity="0.55" stroke-width="1.2"></rect>
-          <text x="246" y="104" fill="#c9d5e0" font-size="10" text-anchor="middle">/v1/add_to_cart</text>
-          <text x="246" y="128" fill="#7f93a1" font-size="7.5" text-anchor="middle">endpoint</text>
-
-          <!-- EXPOSES: cart-service → endpoint -->
-          <path d="M432,92 C390,92 360,100 326,100" stroke="#14b8a6" stroke-width="1.4" stroke-opacity="0.7" fill="none" marker-end="url(#arT)"></path>
-          <text x="352" y="86" fill="#14b8a6" fill-opacity="0.6" font-size="7.5" letter-spacing="0.05em">EXPOSES</text>
-
-          <!-- zone box -->
-          <rect x="356" y="22" width="204" height="166" rx="10" fill="#14b8a6" fill-opacity="0.04" stroke="#14b8a6" stroke-opacity="0.28" stroke-width="1.2" stroke-dasharray="6 5"></rect>
-          <text x="366" y="37" fill="#14b8a6" fill-opacity="0.55" font-size="8.5" letter-spacing="0.07em">ZONE · ASIA-SOUTH-1</text>
-
-          <!-- node box -->
-          <rect x="368" y="46" width="180" height="88" rx="7" fill="#14b8a6" fill-opacity="0.05" stroke="#14b8a6" stroke-opacity="0.42" stroke-width="1" stroke-dasharray="5 4"></rect>
-          <text x="378" y="60" fill="#14b8a6" fill-opacity="0.65" font-size="8" letter-spacing="0.06em">NODE · K8S-04</text>
-
-          <!-- cart-service (ROOT) -->
-          <circle cx="458" cy="92" r="24" fill="#0c1720" stroke="#14b8a6" stroke-width="2.2"></circle>
-          <path d="M449,83 L467,101 M467,83 L449,101" stroke="#14b8a6" stroke-width="2.6" stroke-linecap="round"></path>
-          <text x="458" y="128" fill="#c9d5e0" font-size="9" text-anchor="middle">cart-service</text>
-
-          <!-- QUERIES: cart-service → postgres -->
-          <path d="M482,84 C540,84 575,66 610,66" stroke="#c9d5e0" stroke-width="1.2" stroke-opacity="0.6" fill="none" marker-end="url(#arC)"></path>
-          <text x="548" y="60" fill="#c9d5e0" fill-opacity="0.5" font-size="7.5" letter-spacing="0.05em">QUERIES</text>
-
-          <!-- PUBLISHES: cart-service → topic -->
-          <path d="M478,103 C540,138 590,156 626,160" stroke="#f2bb45" stroke-width="1.3" stroke-opacity="0.72" fill="none" marker-end="url(#arG)"></path>
-          <text x="540" y="140" fill="#f2bb45" fill-opacity="0.6" font-size="7.5" letter-spacing="0.05em">PUBLISHES</text>
-
-          <!-- postgres database -->
-          <rect x="610" y="50" width="126" height="34" rx="6" fill="#fbfcfd" fill-opacity="0.05" stroke="#c9d5e0" stroke-opacity="0.5" stroke-width="1.2"></rect>
-          <ellipse cx="628" cy="66" rx="7" ry="3.5" fill="none" stroke="#c9d5e0" stroke-opacity="0.5" stroke-width="1"></ellipse>
-          <path d="M621,66 L621,72 Q621,76 628,76 Q635,76 635,72 L635,66" fill="none" stroke="#c9d5e0" stroke-opacity="0.5" stroke-width="1"></path>
-          <text x="686" y="65" fill="#c9d5e0" font-size="10" text-anchor="middle">postgres</text>
-          <text x="686" y="77" fill="#7f93a1" font-size="8" text-anchor="middle">:cart-db</text>
-          <text x="673" y="98" fill="#7f93a1" font-size="7.5" text-anchor="middle">database</text>
-
-          <!-- cart.events topic -->
-          <rect x="626" y="150" width="20" height="20" rx="3" fill="#f2bb45" transform="rotate(45 636 160)"></rect>
-          <text x="662" y="157" fill="#f2bb45" font-size="9.5" text-anchor="start">cart.events</text>
-          <text x="662" y="169" fill="#7f93a1" font-size="7.5" text-anchor="start">kafka topic</text>
-
-          <!-- legend -->
-          <g transform="translate(764,12)" fill="#7f93a1" font-size="8">
-            <circle cx="6" cy="6" r="5" fill="#14b8a6"></circle><text x="15" y="9.5">deployment</text>
-            <rect x="1" y="18" width="18" height="11" rx="5.5" fill="none" stroke="#14b8a6" stroke-opacity="0.5" stroke-width="1"></rect><text x="23" y="27">endpoint</text>
-            <rect x="1" y="36" width="18" height="11" rx="3" fill="none" stroke="#c9d5e0" stroke-opacity="0.5" stroke-width="1"></rect><text x="23" y="45">database</text>
-            <rect x="6" y="54" width="8" height="8" rx="1.5" fill="#f2bb45" transform="rotate(45 10 58)"></rect><text x="23" y="62">topic</text>
-            <rect x="1" y="70" width="18" height="11" rx="3" fill="none" stroke="#14b8a6" stroke-opacity="0.28" stroke-width="1" stroke-dasharray="4 3"></rect><text x="23" y="79">zone / node</text>
-          </g>
-        </svg>
-      </div>
-      <div class="flex flex-wrap gap-5 border-t border-white/10 px-5 py-3 font-mono text-[11.5px] text-[#7f93a1]">
-        <span><b class="font-medium text-teal-400">1</b> zone</span>
-        <span><b class="font-medium text-teal-400">1</b> node</span>
-        <span><b class="font-medium text-paper">2</b> deployments</span>
-        <span><b class="font-medium text-paper">1</b> endpoint</span>
-        <span><b class="font-medium text-paper">1</b> database</span>
-        <span><b class="font-medium text-gold-400">1</b> topic</span>
-      </div>
-    </div>
-
-    <p class="mx-auto mt-12 max-w-[60ch] text-[18px] leading-relaxed text-ink-500">
-      arrca builds a live relationship graph of your Kubernetes cluster — from read-only APIs
-      and the OpenTelemetry traces you already emit. Explore it yourself, or let Claude
-      navigate it for you.
-    </p>
-
-    <div class="mt-9 flex flex-wrap items-center justify-center gap-3.5">
-      <a href="/#quickstart" class="rounded-[9px] bg-ink-900 px-6 py-3 text-[15px] font-medium text-paper transition-colors hover:bg-ink-800">Get started</a>
-      <a href={GITHUB} class="inline-flex items-center gap-2 px-2 py-3 text-[15px] font-medium text-ink-900">
-        View on GitHub <span class="text-ink-400">&#8599;</span>
-      </a>
-    </div>
-
-    <div class="mt-9 flex flex-wrap justify-center gap-2 font-mono text-[12.5px] text-ink-400">
-      <span>read-only k8s APIs</span><span class="text-ink-200">·</span>
-      <span>OTel spans</span><span class="text-ink-200">·</span>
-      <span>REST</span><span class="text-ink-200">·</span>
-      <span>MCP</span>
-    </div>
+  <div class="mt-5 font-mono text-[13px] text-ink-400">
+    read-only k8s APIs · OTel trace spans · REST · MCP
   </div>
 </section>
+
+<ProductWindow />
