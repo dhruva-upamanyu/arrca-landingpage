@@ -4,6 +4,7 @@ import CodeBlock from "../components/CodeBlock.astro";
 
 const toc = [
   ["quickstart", "Quickstart"],
+  ["architecture", "Architecture"],
   ["knobs", "Helm knobs"],
   ["collector", "OTel Collector"],
   ["mcp", "MCP / Claude Code"],
@@ -11,9 +12,27 @@ const toc = [
   ["schema", "Graph schema"],
 ];
 
+// Architecture: five Go binaries + a NATS bus + Redis. Source: README.md, helm/graph/values.yaml.
+const archDiagram = `Kubernetes API ──watch──▶ graph-k8s ──┐
+ (pods, nodes, …)        (structure)   │
+                                       ├──▶ Redis ◀──reads── graph-read ──▶ REST API
+OTel Collector ──OTLP──▶ otel-hub ─NATS─▶ graph-spans ──┘   (graph)        └─▶ MCP server
+ (traceID LB)            (ingest +       graph-flows ──┘                       (graph-read mcp)
+                          assemble)`;
+
+const components = [
+  ["graph-k8s", "Kubernetes API (watch)", "Writes structural entities + containment / management / scaling edges to Redis. Single authoritative writer (replicas fixed at 1)."],
+  ["otel-hub", "OTLP/gRPC trace spans", "Ingests raw OTLP spans, assembles whole traces, and publishes spans.raw (per span) + traces.assembled (per trace) to NATS. Writes no Redis — pure transport. The collector must load-balance by trace ID to its headless Service so each trace assembles on one pod."],
+  ["graph-spans", "NATS · spans.raw", "Consumes per-span messages in a queue group; derives relationship entities (endpoint/topic/database) + CALLS/QUERIES/PUBLISHES/CONSUMES/EXPOSES edges into Redis. Idempotent (full-flush + reaper) — scale freely, no trace affinity."],
+  ["graph-flows", "NATS · traces.assembled", "Consumes assembled traces in a queue group; canonicalizes each into a flow (<prefix>:flow:*). The hub already assembled each trace, so the queue group gives whole-trace affinity automatically; counts sum via HINCRBY."],
+  ["graph-read", "Redis", "Serves the read/query REST API; the same image runs the MCP server as graph-read mcp. Stateless — safe to scale."],
+  ["NATS", "—", "Core NATS message bus (no JetStream; fire-and-forget, at-most-once) carrying spans.raw / traces.assembled from otel-hub to the consumers. Bundled single-replica by default, or point at an external server via nats.url."],
+  ["Redis", "—", "The graph store all writers share (keys under the configurable prefix, default graph). Bundled single-replica by default."],
+];
+
 // Code snippets are hoisted to constants and rendered with <Fragment set:text> so
 // the literal braces/colons in YAML and JSON are not parsed as Astro expressions.
-const installSh = `# Build + push all three images (versioned + latest), then helm upgrade --install:
+const installSh = `# Build + push the images (versioned + latest), then helm upgrade --install:
 REGISTRY=<your-registry> ./deploy.sh
 
 # Or with helm directly against pre-built images:
@@ -45,15 +64,14 @@ presets:
 
 config:
   exporters:
-    # graph-otel reconstructs whole traces in memory (for flows), so every
-    # span of a trace must reach the SAME replica. The loadbalancing exporter
-    # shards by trace id across the graph-otel pods, discovered via the
-    # headless Service (returns one A record per pod).
+    # otel-hub assembles each whole trace, so every span of a trace must reach
+    # the SAME hub pod. The loadbalancing exporter shards by trace id across the
+    # otel-hub pods, discovered via the headless Service (one A record per pod).
     loadbalancing:
       routing_key: traceID
       resolver:
         dns:
-          hostname: graph-otel-otlp-headless.default.svc.cluster.local
+          hostname: otel-hub-otlp-headless.default.svc.cluster.local
           port: 4317
       protocol:
         otlp:
@@ -96,21 +114,24 @@ const redisSchema = `<prefix>:entity:<id>            HASH  id, kind, name, last_
 
 // Helm knobs (subset most relevant to install/operate). Source: helm/graph/README.md.
 const knobs = [
-  ["image.registry", "(required)", "Container registry for all three images, no trailing slash. The image ref is <registry>/<imageName>:<tag>."],
+  ["image.registry", "(required)", "Container registry for all images, no trailing slash. The image ref is <registry>/<imageName>:<tag>."],
   ["image.tag", "latest", "Shared image tag for all components. deploy.sh pins the exact version at install time."],
-  ["graph.keyPrefix", "graph", "GRAPH_REDIS_KEY_PREFIX namespacing every Redis key. All three components MUST agree on this to share one graph."],
+  ["graph.keyPrefix", "graph", "GRAPH_REDIS_KEY_PREFIX namespacing every Redis key. All components MUST agree on this to share one graph."],
   ["redis.internal.enabled", "true", "Deploy a bundled single-replica Redis. Set false to bring your own."],
   ["redis.host", "\"\"", "REDIS_HOST for external Redis (when internal.enabled is false and existingSecret is empty)."],
   ["redis.password", "\"\"", "REDIS_PASSWORD for external Redis. Empty = no auth."],
   ["redis.existingSecret", "\"\"", "Source host/username/password from an existing Secret (via secretKeyRef)."],
-  ["redis.internal.persistence.enabled", "false", "Persist the bundled Redis in a PVC. Off by default — the graph is rebuilt from the K8s API and OTel data after a restart."],
+  ["redis.internal.persistence.enabled", "false", "Persist the bundled Redis in a PVC. Off by default — the graph is rebuilt from the K8s API and trace spans after a restart."],
   ["redis.internal.persistence.size", "1Gi", "PVC size when persistence is enabled."],
-  ["graphOtel.replicas", "2", "Replica count. graph-otel is horizontally scalable (idempotent full-flush writes + reaper); requires the collector to shard spans by trace ID to the headless Service (see the loadbalancing exporter above)."],
-  ["graphOtel.service.otlpPort", "4317", "OTLP gRPC port. Point the collector's traces exporter at graph-otel-otlp:<otlpPort>."],
-  ["graphOtel.config.flushInterval", "60s", "GRAPH_FLUSH_INTERVAL: how often the whole in-memory set is written to Redis (idempotent HSET/SADD, no deletes — safe across replicas)."],
-  ["graphOtel.config.expiryTtl", "100s", "GRAPH_EXPIRY_TTL: drop in-memory entities/edges not seen for this long. MUST exceed flushInterval."],
-  ["graphOtel.config.reapInterval", "5m", "GRAPH_REAP_INTERVAL: how often the reaper deletes Redis entities not refreshed within reapTtl. 0 disables it; all replicas reap (idempotent)."],
-  ["graphOtel.config.reapTtl", "48h", "GRAPH_REAP_TTL: delete graph-otel-owned Redis entities not refreshed by any replica for this long. (FLOW_REAP_INTERVAL / FLOW_REAP_TTL do the same for flows.)"],
+  ["nats.internal.enabled", "true", "Deploy a bundled single-replica Core NATS bus (otel-hub → graph-spans/graph-flows). Set false to point at an external server via nats.url."],
+  ["nats.url", "\"\"", "NATS_URL for an external server (used only when nats.internal.enabled is false)."],
+  ["otelHub.replicas", "1", "OTLP ingest + trace-assembler replicas. >1 requires the collector to shard spans by trace ID to the headless Service (otel-hub-otlp-headless)."],
+  ["otelHub.service.otlpPort", "4317", "OTLP gRPC port on the headless Service. Point the collector's loadbalancing exporter at otel-hub-otlp-headless:<otlpPort>."],
+  ["graphSpans.replicas", "1", "Relationship-writer replicas. Idempotent (full-flush + reaper) + NATS queue group — scale freely, no trace affinity."],
+  ["graphSpans.config.flushInterval", "60s", "GRAPH_FLUSH_INTERVAL: how often the whole in-memory set is written to Redis (idempotent HSET/SADD, no deletes — safe across replicas)."],
+  ["graphSpans.config.reapTtl", "48h", "GRAPH_REAP_TTL: delete graph-spans-owned Redis entities not refreshed by any replica for this long (paired with reapInterval, 5m)."],
+  ["graphFlows.replicas", "1", "Flow-writer replicas. The queue group gives each whole trace to one replica (affinity automatic); counts sum via HINCRBY. Scale freely."],
+  ["graphFlows.config.flowReapTtl", "48h", "FLOW_REAP_TTL: delete flows not re-observed by any replica for this long (paired with flowReapInterval, 1h)."],
   ["graphK8s.config.resyncPeriod", "5m", "WATCH_RESYNC_PERIOD: how often informers re-list every object (self-heal)."],
   ["graphRead.replicas", "1", "Replica count for the query API (stateless reader; safe to raise)."],
   ["graphRead.ingress.enabled", "false", "Expose the query API via Ingress. NO auth and includes destructive POST /prune — add auth or restrict IPs first."],
@@ -170,7 +191,7 @@ const edgeTypes = [
   ["QUERIES / QUERIED_BY", "Spans", "A container queries a database.", "DB CLIENT span: db.system + span.kind=CLIENT + server.address. Carries action = templatized span.name (the SQL op); one edge per distinct operation."],
   ["PUBLISHES / PUBLISHED_BY", "Spans", "A container publishes to a topic.", "Messaging PRODUCER span."],
   ["CONSUMES / CONSUMED_BY", "Spans", "A container consumes from a topic.", "Messaging CONSUMER span."],
-  ["EMITS / EMITTED_BY", "Spans (rollup)", "Workload-level rollup of everything its containers touch — one hop to answer “what does this deployment talk to?”", "deployment/statefulset/… → every endpoint/topic/database (the union of its containers' CALLS/EXPOSES/QUERIES/PUBLISHES/CONSUMES), hoisted onto the stable workload id. graph-otel resolves container → pod → workload via the pod's MANAGED_BY edge at flush time."],
+  ["EMITS / EMITTED_BY", "Spans (rollup)", "Workload-level rollup of everything its containers touch — one hop to answer “what does this deployment talk to?”", "deployment/statefulset/… → every endpoint/topic/database (the union of its containers' CALLS/EXPOSES/QUERIES/PUBLISHES/CONSUMES), hoisted onto the stable workload id. graph-spans resolves container → pod → workload via the pod's MANAGED_BY edge at flush time."],
 ];
 ---
 <BaseLayout title="arrca docs" description="Install, configure, and query otel-k8s-graph.">
@@ -188,7 +209,8 @@ const edgeTypes = [
       <h1 class="text-4xl font-bold tracking-tight text-ink-900">Docs</h1>
       <p class="mt-3 text-lg text-ink-500">
         Install <strong class="text-ink-800">otel-k8s-graph</strong>, feed it trace spans, and query
-        the graph over REST or from Claude. Three small Go binaries, coordinating only through Redis.
+        the graph over REST or from Claude. Five small Go binaries coordinating through Redis and a
+        NATS bus — see <a href="#architecture" class="text-teal-600 hover:text-teal-500">Architecture</a>.
       </p>
 
       <!-- Quickstart -->
@@ -208,6 +230,45 @@ const edgeTypes = [
           <CodeBlock title="external redis (inline)"><Fragment set:text={redisExternal} /></CodeBlock>
           <CodeBlock title="external redis (existing secret)"><Fragment set:text={redisSecret} /></CodeBlock>
         </div>
+      </section>
+
+      <!-- Architecture -->
+      <section id="architecture" class="mt-14 scroll-mt-24">
+        <h2 class="text-2xl font-bold text-ink-900">Architecture</h2>
+        <p class="mt-3 text-ink-500">
+          Five small Go binaries, coordinating through <strong class="text-ink-800">Redis</strong> (the
+          graph store) and a <strong class="text-ink-800">NATS</strong> bus (the span pipeline). Two
+          independent paths write the graph — Kubernetes structure and span-derived relationships —
+          and one binary serves it.
+        </p>
+        <div class="mt-4"><CodeBlock title="data flow"><Fragment set:text={archDiagram} /></CodeBlock></div>
+        <div class="mt-5 overflow-x-auto rounded-xl border border-ink-100">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-ink-50 text-ink-800">
+              <tr>
+                <th class="px-4 py-2 font-semibold">Binary</th>
+                <th class="px-4 py-2 font-semibold">Input</th>
+                <th class="px-4 py-2 font-semibold">Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              {components.map(([name, input, role]) => (
+                <tr class="border-t border-ink-100 align-top">
+                  <td class="px-4 py-2 font-mono text-xs font-medium text-teal-600 whitespace-nowrap">{name}</td>
+                  <td class="px-4 py-2 font-mono text-xs text-ink-600 whitespace-nowrap">{input}</td>
+                  <td class="px-4 py-2 text-ink-500 min-w-[24rem]">{role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-4 text-sm text-ink-500">
+          <strong class="text-ink-800">Scaling.</strong> The one trace-affinity requirement lives at the
+          collector → otel-hub edge (the <code class="font-mono text-ink-800">loadbalancing</code> exporter
+          shards by trace ID to the headless Service). Downstream, NATS queue groups carry that affinity,
+          so <code class="font-mono">otelHub.replicas</code>, <code class="font-mono">graphSpans.replicas</code>,
+          and <code class="font-mono">graphFlows.replicas</code> all scale freely.
+        </p>
       </section>
 
       <!-- Helm knobs -->
@@ -242,11 +303,11 @@ const edgeTypes = [
       <section id="collector" class="mt-14 scroll-mt-24">
         <h2 class="text-2xl font-bold text-ink-900">OTel Collector setup</h2>
         <p class="mt-3 text-ink-500">
-          graph-otel consumes <strong class="text-ink-800">trace spans directly</strong> — no
+          otel-hub ingests <strong class="text-ink-800">trace spans directly</strong> — no
           spanmetrics connector or metrics pipeline required. Fan the spans your apps already emit to
-          graph-otel alongside your existing trace backend. The
+          otel-hub alongside your existing trace backend, load-balanced by trace ID. The
           <code class="font-mono text-ink-800">k8sattributes</code> preset adds the
-          <code class="font-mono text-ink-800">k8s.*</code> attributes graph-otel needs to attach
+          <code class="font-mono text-ink-800">k8s.*</code> attributes graph-spans needs to attach
           relationships to the right container.
         </p>
         <div class="mt-4"><CodeBlock title="otel-collector-values.yaml"><Fragment set:text={otelValues} /></CodeBlock></div>
@@ -255,8 +316,9 @@ const edgeTypes = [
           Already exporting traces? Add the <code class="font-mono text-ink-800">loadbalancing</code>
           exporter alongside your existing one in the traces pipeline
           (<code class="font-mono text-ink-800">exporters: [your-backend, loadbalancing]</code>).
-          The trace-id sharding keeps each trace whole across graph-otel replicas, which its
-          flow assembly requires.
+          The trace-ID sharding keeps each trace whole on one otel-hub pod, which its trace assembly
+          requires. Run the collector as a single <strong class="text-ink-800">gateway</strong> tier
+          (not a per-node daemonset) so each instance sees whole traces.
         </p>
       </section>
 
