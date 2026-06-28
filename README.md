@@ -16,7 +16,6 @@ npm run dev
 
 ```bash
 npm run build   # outputs to ./dist
-npm run check   # type-check
 ```
 
 ## Deploy
