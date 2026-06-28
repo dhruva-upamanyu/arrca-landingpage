@@ -1,0 +1,18 @@
+---
+// Coverage.astro — native stack coverage statement + entity chips.
+const chips = ["Kafka", "MySQL", "HTTP", "gRPC", "JVM", "goroutines", "containers", "nodes", "pods", "autoscalers"];
+---
+<section class="px-6 pt-[72px] pb-[104px] sm:px-10">
+  <div class="mx-auto max-w-[1080px] text-center">
+    <div class="mb-[22px] font-mono text-[12.5px] tracking-[0.14em] text-accent">NATIVE STACK COVERAGE</div>
+    <p class="mx-auto mb-8 max-w-[840px] text-[clamp(19px,2.6vw,24px)] font-medium leading-[1.45] tracking-[-0.015em] text-ink-900">
+      Kafka, MySQL, HTTP, gRPC, application runtimes (the JVM, goroutines), containers, nodes, pods,
+      autoscalers and many more are all first-class entities in graphs and flows.
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-[9px]">
+      {chips.map((c) => (
+        <span class="rounded-[20px] border border-ink-900/[0.18] bg-paper-2 px-3.5 py-1.5 font-mono text-[12.5px] text-ink-900">{c}</span>
+      ))}
+    </div>
+  </div>
+</section>

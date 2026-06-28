@@ -4,8 +4,8 @@ import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
 interface Props { title?: string; description?: string; }
 const {
-  title = "arrca — service graph on steroids",
-  description = "A live relationship graph of your Kubernetes cluster, built from read-only APIs and the OpenTelemetry traces you already emit. Explore it yourself, or let Claude navigate it.",
+  title = "arrca — RCA for Kubernetes",
+  description = "A continuously-updated topology of your Kubernetes estate, built from the k8s API and the OpenTelemetry metrics and traces you already emit. Install the Helm chart, point your otel-collector at it.",
 } = Astro.props;
 ---
 <!doctype html>

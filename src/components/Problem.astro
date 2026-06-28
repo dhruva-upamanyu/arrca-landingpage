@@ -1,0 +1,41 @@
+---
+// Problem.astro — the failure modes dashboards can't see (3 pitfalls).
+const pitfalls = [
+  {
+    n: "01",
+    title: "Aggregated p99 is too coarse",
+    body: "A single endpoint usually spans many execution paths (three sequential DB calls give 2³ = 8 distinct branches depending on whether they opened a new connection or borrowed from a pool). Collapsing them into one number averages away exactly the variation that matters.",
+  },
+  {
+    n: "02",
+    title: "Retry storms",
+    body: "Poor retry policies and error handling can cause cascading failures, keeping services from recovering long after the original fault is gone.",
+  },
+  {
+    n: "03",
+    title: "The Distributed Monolith",
+    body: "A common microservices trap is services calling each other in cyclic or ad-hoc ways. This reintroduces all the tight coupling of a monolith, but now with the network latency and failure modes of a distributed system.",
+  },
+];
+---
+<section id="problem" class="scroll-mt-20 border-y border-ink-900/[0.07] bg-band px-6 py-[104px] sm:px-10">
+  <div class="mx-auto max-w-[1080px]">
+    <div class="mb-5 font-mono text-[12.5px] tracking-[0.14em] text-accent">THE PROBLEM</div>
+    <h2 class="mb-[22px] max-w-[820px] text-[clamp(30px,5vw,42px)] font-semibold leading-[1.12] tracking-[-0.025em]">
+      Microservices at scale fail in ways dashboards can't see.
+    </h2>
+    <p class="mb-14 max-w-[720px] text-[19px] leading-[1.6] text-ink-600">
+      A REST API can be a simple HTTP client or a battle-tested system with timeouts, circuit breaking,
+      stateful retries, idempotency and other fault-tolerant mechanisms.
+    </p>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {pitfalls.map((p) => (
+        <div class="rounded-[14px] border border-ink-900/[0.12] bg-paper-2 p-7">
+          <div class="mb-[18px] font-mono text-[11.5px] text-ink-400">{p.n}</div>
+          <div class="mb-3 text-[20px] font-semibold tracking-[-0.015em]">{p.title}</div>
+          <p class="text-[15.5px] leading-[1.6] text-ink-500">{p.body}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

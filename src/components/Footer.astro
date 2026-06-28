@@ -3,18 +3,18 @@ import Logo from "./Logo.astro";
 const GITHUB = "https://github.com/arrca-ai/otel-k8s-graph";
 const EMAIL = "mailto:dhruvaupamanyu93@gmail.com";
 ---
-<footer class="border-t border-ink-150 bg-ink-50">
-  <div class="mx-auto flex max-w-[1180px] flex-wrap items-center gap-3.5 px-6 py-9 sm:px-8">
+<footer class="border-t border-ink-900/[0.08] bg-band">
+  <div class="mx-auto flex max-w-[1160px] flex-wrap items-center gap-3.5 px-6 py-9 sm:px-10">
     <span class="text-ink-900"><Logo size={22} /></span>
-    <span class="text-[16px] font-bold">arrca</span>
-    <span class="hidden text-[13.5px] text-ink-400 sm:inline">Root-cause analysis for Kubernetes + OpenTelemetry · more RCA tools coming</span>
+    <span class="text-[16px] font-semibold">arrca</span>
+    <span class="hidden text-[13.5px] text-ink-400 sm:inline">RCA for Kubernetes + OpenTelemetry · graphs and flows from the data you already emit</span>
     <span class="flex-1"></span>
-    <div class="flex flex-wrap gap-x-[22px] gap-y-1.5 text-[13.5px] text-ink-500">
-      <a href="/#views" class="text-ink-500 no-underline hover:text-ink-900">Product</a>
-      <a href="/#mcp" class="text-ink-500 no-underline hover:text-ink-900">MCP</a>
-      <a href="/docs" class="text-ink-500 no-underline hover:text-ink-900">Docs</a>
-      <a href={EMAIL} class="text-ink-500 no-underline hover:text-ink-900">Contact</a>
-      <a href={GITHUB} class="text-ink-500 no-underline hover:text-ink-900">GitHub ↗</a>
+    <div class="flex flex-wrap gap-x-[22px] gap-y-1.5 text-[13.5px] text-ink-600">
+      <a href="#flows" class="text-ink-600 no-underline hover:text-ink-900">arrca-flows</a>
+      <a href="#graphs" class="text-ink-600 no-underline hover:text-ink-900">arrca-graphs</a>
+      <a href="/docs" class="text-ink-600 no-underline hover:text-ink-900">Docs</a>
+      <a href={EMAIL} class="text-ink-600 no-underline hover:text-ink-900">Contact</a>
+      <a href={GITHUB} class="text-ink-600 no-underline hover:text-ink-900">GitHub ↗</a>
     </div>
   </div>
 </footer>

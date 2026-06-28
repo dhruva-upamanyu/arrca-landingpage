@@ -1,0 +1,97 @@
+---
+// Products.astro — the two arrca surfaces: flows (trace variants) + graphs (topology).
+const waterfall = [
+  { label: "checkout",      indent: 0,  labelClass: "text-ink-900",                  left: 0,  width: 100, hot: true,  time: "1.31s", indentPx: 0 },
+  { label: "├ cart-svc",    indent: 1,  labelClass: "text-ink-500",                  left: 2,  width: 13,  hot: false, time: "71ms" },
+  { label: "├ orders-api",  indent: 1,  labelClass: "text-ink-500",                  left: 5,  width: 20,  hot: false, time: "96ms" },
+  { label: "├ payments-api",indent: 1,  labelClass: "text-ink-900",                  left: 18, width: 70,  hot: true,  time: "920ms" },
+  { label: "└ postgres",    indent: 2,  labelClass: "text-ink-900",                  left: 26, width: 60,  hot: true,  time: "812ms" },
+  { label: "└ inventory",   indent: 1,  labelClass: "text-ink-500",                  left: 6,  width: 9,   hot: false, time: "54ms" },
+];
+---
+<section id="how" class="px-6 pb-10 sm:px-10">
+  <div class="mx-auto flex max-w-[1080px] flex-col gap-7">
+
+    <!-- arrca-flows -->
+    <div id="flows" class="grid scroll-mt-20 items-center gap-12 rounded-[20px] border border-ink-900/10 bg-band p-8 sm:p-12 lg:grid-cols-[1fr_1.08fr]">
+      <div>
+        <div class="mb-3.5 font-mono text-[13px] text-accent">arrca-flows</div>
+        <h3 class="mb-4 text-[clamp(26px,3.5vw,32px)] font-semibold leading-[1.12] tracking-[-0.02em]">Derive insights from your traces.</h3>
+        <p class="mb-4 text-[16.5px] leading-[1.62] text-ink-600">arrca collapses each assembled trace into a canonical variant of a root span.</p>
+        <p class="text-[16.5px] leading-[1.62] text-ink-600">That's what turns thousands of traces into a handful of recurring “interesting” structures you can triage instead of trying to understand the flow during an outage.</p>
+      </div>
+      <div class="rounded-[16px] border border-ink-900/[0.12] bg-paper-2 px-6 py-5 shadow-[0_24px_50px_-34px_rgba(20,40,58,.42)]">
+        <div class="mb-[18px] flex items-center justify-between">
+          <span></span>
+          <span class="font-mono text-[11px] text-ink-400">142 traces → 1 flow</span>
+        </div>
+        <div class="flex flex-col gap-[11px] font-mono text-[12px]">
+          {waterfall.map((r) => (
+            <div class="grid grid-cols-[110px_1fr_56px] items-center gap-3 sm:grid-cols-[128px_1fr_62px]">
+              <span class={r.labelClass} style={`padding-left:${r.indent * 12}px`}>{r.label}</span>
+              {r.width === 100 ? (
+                <span class="h-[15px] w-full rounded-[4px] bg-ink-900/55"></span>
+              ) : (
+                <span class="relative h-[15px] rounded-[4px] bg-ink-900/[0.06]">
+                  <span class={`absolute inset-y-0 rounded-[4px] ${r.hot ? "bg-accent" : "bg-ink-900/50"}`} style={`left:${r.left}%;width:${r.width}%`}></span>
+                </span>
+              )}
+              <span class={`text-right ${r.hot ? "text-accent" : "text-ink-400"}`}>{r.time}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- arrca-graphs -->
+    <div id="graphs" class="grid scroll-mt-20 items-center gap-12 rounded-[20px] border border-ink-900/10 bg-band p-8 sm:p-12 lg:grid-cols-[1.08fr_1fr]">
+      <div class="rounded-[16px] border border-ink-900/[0.12] bg-paper-2 px-[18px] pt-[18px] pb-2.5 shadow-[0_24px_50px_-34px_rgba(20,40,58,.42)]">
+        <div class="flex items-center justify-between px-1.5 pt-1 pb-3.5">
+          <span class="font-mono text-[11.5px] tracking-[0.06em] text-ink-400">graphs · ego-network</span>
+          <span class="rounded-[20px] border border-ink-900/[0.18] px-2.5 py-[3px] font-mono text-[11px] text-ink-900">focus: checkout</span>
+        </div>
+        <svg viewBox="0 0 560 460" class="block h-auto w-full">
+          <g stroke="rgba(20,40,58,.22)" stroke-width="1.6" stroke-linecap="round">
+            <line x1="280" y1="230" x2="280" y2="60"></line>
+            <line x1="280" y1="230" x2="110" y2="130"></line>
+            <line x1="280" y1="230" x2="280" y2="410"></line>
+            <line x1="110" y1="130" x2="95" y2="340"></line>
+            <line x1="280" y1="60" x2="470" y2="330"></line>
+          </g>
+          <g stroke="#b4552f" stroke-width="2.6" stroke-linecap="round">
+            <line x1="280" y1="230" x2="450" y2="120"></line>
+            <line x1="450" y1="120" x2="470" y2="330"></line>
+          </g>
+          <circle cx="280" cy="60" r="7" fill="#fbf8f2" stroke="#14283a" stroke-width="2"></circle>
+          <circle cx="110" cy="130" r="7" fill="#fbf8f2" stroke="#14283a" stroke-width="2"></circle>
+          <circle cx="95" cy="340" r="7" fill="#fbf8f2" stroke="#14283a" stroke-width="2"></circle>
+          <circle cx="280" cy="410" r="7" fill="#fbf8f2" stroke="#14283a" stroke-width="2"></circle>
+          <circle cx="450" cy="120" r="7.5" fill="#fbf8f2" stroke="#14283a" stroke-width="2"></circle>
+          <circle cx="470" cy="330" r="13" fill="none" stroke="#b4552f" stroke-width="1.4" opacity="0.4"></circle>
+          <circle cx="470" cy="330" r="8" fill="#fbf8f2" stroke="#b4552f" stroke-width="2.6"></circle>
+          <circle cx="280" cy="230" r="11" fill="#14283a"></circle>
+          <g font-family="'Geist Mono Variable', monospace" font-size="12.5" fill="#14283a" text-anchor="middle">
+            <text x="280" y="208" font-weight="500">checkout</text>
+            <text x="280" y="42">orders-api</text>
+            <text x="110" y="112">cart-svc</text>
+            <text x="95" y="367">redis</text>
+            <text x="280" y="433">inventory</text>
+            <text x="450" y="102">payments-api</text>
+            <text x="470" y="360" fill="#b4552f">postgres</text>
+          </g>
+          <g transform="translate(372,286)">
+            <rect x="0" y="0" width="118" height="26" rx="13" fill="#b4552f"></rect>
+            <text x="59" y="17" font-family="'Geist Mono Variable', monospace" font-size="12" fill="#f5f2ea" text-anchor="middle">p99 1.24s ↑3×</text>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <div class="mb-3.5 font-mono text-[13px] text-accent">arrca-graphs</div>
+        <h3 class="mb-4 text-[clamp(26px,3.5vw,32px)] font-semibold leading-[1.12] tracking-[-0.02em]">Derive insights from your K8s topology.</h3>
+        <p class="mb-4 text-[16.5px] leading-[1.62] text-ink-600">arrca continuously maps your estate — pods, deployments, nodes, HPAs, services and any CRD — and fuses in the call and dependency structure from live traces and metrics.</p>
+        <p class="text-[16.5px] leading-[1.62] text-ink-600">One navigable graph gives you a clear picture of single points of failure, cyclical calls, and poor upstream / downstream choices.</p>
+      </div>
+    </div>
+
+  </div>
+</section>

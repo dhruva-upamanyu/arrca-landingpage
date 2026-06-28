@@ -1,40 +1,39 @@
 @import "tailwindcss";
 
-@import "@fontsource/space-grotesk/400.css";
-@import "@fontsource/space-grotesk/500.css";
-@import "@fontsource/space-grotesk/600.css";
-@import "@fontsource/space-grotesk/700.css";
-@import "@fontsource/jetbrains-mono/400.css";
-@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 
-/* arrca design tokens — engineering-spec minimalism */
+/* arrca design tokens — warm engineering minimalism (Geist + cream/rust) */
 @theme {
-  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
 
-  --color-paper: #fbfcfd;
+  /* warm paper surfaces */
+  --color-paper: #f5f2ea;    /* page background */
+  --color-paper-2: #fbf8f2;  /* raised cards / windows */
+  --color-band: #efeadf;     /* banded sections */
 
-  /* cool ink ramp */
+  /* ink ramp (cool navy) */
   --color-ink-50: #f6f8f9;   /* panel fill */
   --color-ink-100: #eef1f3;  /* faint hairline */
   --color-ink-150: #e7ebee;  /* default hairline / border */
   --color-ink-200: #dde4e9;  /* stronger hairline */
-  --color-ink-400: #8593a0;  /* mono labels */
-  --color-ink-500: #51616f;  /* body copy */
-  --color-ink-600: #6b7888;  /* muted descriptions */
+  --color-ink-300: #9aa3ac;  /* placeholder text */
+  --color-ink-400: #7c8893;  /* mono labels */
+  --color-ink-500: #52606e;  /* muted body copy */
+  --color-ink-600: #46566a;  /* body copy */
   --color-ink-800: #1c2738;
-  --color-ink-900: #11202e;  /* headings */
+  --color-ink-900: #14283a;  /* headings + borders (use /10–/18 for hairlines) */
 
-  /* single accent */
-  --color-teal-400: #14b8a6; /* bright */
+  /* single accent — terracotta */
+  --color-accent: #b4552f;
+
+  /* retained for /docs (teal-era tokens) */
+  --color-teal-400: #14b8a6;
   --color-teal-500: #0fa595;
-  --color-teal-600: #0d9488; /* base */
-
-  /* logo-only warm */
+  --color-teal-600: #0d9488;
   --color-gold-400: #f2bb45;
   --color-gold-500: #e3a008;
-
-  /* dark sections + code */
   --color-night: #0f1c28;
   --color-night-2: #13283a;
   --color-night-line: #1c3040;
@@ -51,6 +50,5 @@ html {
 }
 
 ::selection {
-  background: var(--color-teal-400);
-  color: #fff;
+  background: rgba(180, 85, 47, 0.18);
 }
