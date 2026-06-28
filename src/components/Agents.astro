@@ -1,0 +1,46 @@
+---
+// Agents.astro — AI root-cause analysis. arrca's agents reason over the
+// graphs + flows and surface ranked root-cause candidates.
+const candidates = [
+  { rank: "01", entity: "payment → postgres", detail: "connection pool exhausted", score: 87, top: true },
+  { rank: "02", entity: "payment → pg-gateway", detail: "error rate increased", score: 61, top: false },
+  { rank: "03", entity: "cart-svc", detail: "possible missing index on table 'cart_items'", score: 28, top: false },
+];
+---
+<section class="scroll-mt-20 border-y border-ink-900/[0.07] bg-band px-6 py-[104px] sm:px-10">
+  <div class="mx-auto grid max-w-[1080px] items-center gap-12 lg:grid-cols-[1fr_1.08fr]">
+    <div>
+      <div class="mb-5 font-mono text-[12.5px] tracking-[0.14em] text-accent">AI ROOT-CAUSE ANALYSIS</div>
+      <h2 class="mb-[18px] max-w-[520px] text-[clamp(28px,4vw,36px)] font-semibold leading-[1.14] tracking-[-0.022em]">
+        Debugging production is often like finding a needle-in-a-haystack problem.
+      </h2>
+      <p class="max-w-[480px] text-[16.5px] leading-[1.62] text-ink-600">
+        arrca's AI agents look at real production data and distilled signals from your graphs and flows,
+        then surface the most likely candidates for root-cause analysis.
+      </p>
+    </div>
+
+    <div class="rounded-[16px] border border-ink-900/[0.12] bg-paper-2 px-6 py-5 shadow-[0_24px_50px_-34px_rgba(20,40,58,.42)]">
+      <div class="mb-[18px] flex items-center justify-between">
+        <span class="font-mono text-[11.5px] tracking-[0.06em] text-ink-400">arrca-agents · RCA candidates</span>
+        <span class="font-mono text-[11px] text-ink-400">ranked by likelihood</span>
+      </div>
+      <div class="flex flex-col gap-2.5">
+        {candidates.map((c) => (
+          <div class={`rounded-[11px] border px-3.5 py-3 ${c.top ? "border-accent/30 bg-accent/[0.05]" : "border-ink-900/[0.10] bg-paper"}`}>
+            <div class="flex items-center gap-2.5">
+              <span class="font-mono text-[11px] text-ink-400">{c.rank}</span>
+              <span class="text-[13.5px] font-semibold text-ink-900">{c.entity}</span>
+              <span class="flex-1"></span>
+              <span class={`font-mono text-[12px] font-semibold ${c.top ? "text-accent" : "text-ink-500"}`}>{c.score}%</span>
+            </div>
+            <p class="mt-1 text-[12.5px] leading-[1.5] text-ink-500">{c.detail}</p>
+            <span class="mt-2.5 block h-[5px] rounded-full bg-ink-900/[0.06]">
+              <span class={`block h-full rounded-full ${c.top ? "bg-accent" : "bg-ink-900/40"}`} style={`width:${c.score}%`}></span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
